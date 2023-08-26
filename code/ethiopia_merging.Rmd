@@ -1,0 +1,1716 @@
+---
+title: "Ethiopia Conflict Data"
+author: "Micol Morellini^[Original author. Replicated by Tom Brailey in `r format(Sys.time(), '%B, %Y')`]"
+date: "10/27/2021" 
+output:
+  bookdown::html_document2:
+    fig_caption: yes
+    fig_crop: yes
+    keep_tex: yes
+    number_sections: true
+    citation_package: biblatex
+    toc: true
+    word_count: true
+bibliography: ../bib/conflict-biblio.bib
+link-citations: true
+linkcolor: blue
+biblatexoptions: [backend=biber,citestyle=authoryear,maxcitenames=2, useprefix,autocite=inline,doi=false,url=false,isbn=false]
+header-includes:
+  - \usepackage[english]{babel}
+  - \usepackage[utf8]{inputenc}
+  - \usepackage{csquotes}
+  - \usepackage{fancyhdr}
+  - \usepackage{setspace}
+  - \usepackage{geometry}
+  - \usepackage{verbatim}
+  - \usepackage{hyperref}
+  - \usepackage{xcolor}
+  - \usepackage{floatrow}
+  - \floatsetup[table]{capposition=top}
+  - \floatsetup[figure]{capposition=top}
+fontsize: 12pt
+---
+
+```{r setup, include=FALSE}
+
+# clear workspace
+rm(list = ls())
+
+knitr::opts_chunk$set(echo = TRUE)
+
+options(scipen = 999)
+
+# load essential packages
+library(magrittr)
+library(ggplot2)
+library(data.table)
+
+```
+
+# Introduction
+
+This document merges information on conflict events in Ethiopia stemming from four different sources (ACLED, GTD, SCAD, UCDP GED) into one unified dataset. The dataset makes use of the MELTT algorithm developed by @Donnay2019 and provides geo-referenced information on conflict events over the period 1997-2017.
+
+The following file is organized as follows:
+
+1. First, the separate conflict datasets are imported
+2. Then, actor, event, and precision taxonomies are developed following @Donnay2019
+3. Using the actor, event, and precision taxonomies the separate datasets are integrated to produce one coherent dataset using the MELTT algorithm (``meltt`` package)
+4. All events flagged as potential duplicates by the ``meltt`` package are reviewed and manually coded as unique events or duplicates
+5. Finally, a unified dataset is produced.
+
+To reproduce the final dataset, one needs the following files:
+
+1. 
+2.
+3.
+4. 
+5.
+
+The code used to reproduce the outputs can be found in the corresponding .Rmd file. 
+
+# Importing datasets
+
+```{r, include= FALSE}
+
+#load("Literature/Violence Datasets/JCR-17-0266.R1/JCR-17-0266.R1/replication_material/replication_material/Data/Nigeria_2011.Rdata")
+
+# data filepath
+fp_data <- c("../../../conflict-datasets/Data/")
+
+```
+
+```{r}
+
+event_tax <- read.csv(paste0(fp_data, "event_tax.csv"))
+
+prec_tax  <- read.csv(paste0(fp_data, "prec_tax.csv"))
+
+```
+
+## ACLED
+
+The ACLED dataset registers a total of 4102 observations over the period 1997-2017.
+
+```{r, include=FALSE}
+
+# read in file
+acled <- read.csv(
+  paste0(fp_data, "ACLED/1997-01-01-2022-01-31-Ethiopia.csv"))
+
+# subsetting to years of interest: between 1997 and 2017
+acled %<>% dplyr::filter(year <= 2017)
+
+# look at structure of data
+str(acled)
+
+```
+
+This initial cleaning of the ACLED data gives the following event types:
+
+```{r, include=FALSE}
+
+# inspecting variables in ACLED
+names(acled)
+
+# changing event types to match those in Donnay et al. 2019
+unique(acled$event_type) # finding unique event and sub-event types
+unique(acled$sub_event_type)
+
+# creating new column to keep original ACLED coding of event variable
+acled$event_type2 <- acled$event_type 
+acled$event_type <- NA
+
+acled$event_type[
+  acled$event_type2 == "Protests"] <- 
+  "Protests" 
+
+acled$event_type[
+  acled$event_type2 == "Violence against civilians"] <- 
+  "Violence against civilians"
+
+acled$event_type[
+  acled$event_type2 == "Riots"] <- 
+  "Riots" 
+
+acled$event_type[
+  acled$event_type2 == "Explosions/Remote violence"] <- 
+  "Remote violence" 
+
+acled$event_type[
+  acled$event_type2 == "Strategic developments"] <- 
+  "Non-violent activity by a conflict actor"
+
+acled$event_type[
+  acled$event_type2 == "Strategic developments" &
+    acled$sub_event_type=="Non-violent transfer of territory"] <- 
+  "Non-violent transfer of territory"
+
+acled$event_type[
+  acled$event_type2 == "Strategic developments" &
+    acled$sub_event_type == "Headquarters or base established"] <- 
+  "Headquarters or base established"
+
+acled$event_type[
+  acled$event_type2 == "Battles"] <- 
+  "Battle-No change of territory"
+
+acled$event_type[
+  acled$event_type2 == "Battles" &
+    acled$sub_event_type == "Non-state actor overtakes territory"] <- 
+  "Battle-Non-state actor overtakes territory"
+
+acled$event_type[
+  acled$event_type2 == "Battles" &
+    acled$sub_event_type == "Government regains territory"] <- 
+  "Battle-Government regains territory"
+
+acled$event_type <- as.factor(acled$event_type)
+
+```
+
+```{r, echo = FALSE}
+
+levels(acled$event_type)
+
+```
+
+We carry out further cleaning of the ACLED dataset by substituting categorical responses with numerical values and by changing the format of other variables (including latitude and longitude, and time-related variables).
+
+```{r, include = FALSE}
+
+# looking for missing values
+apply(acled, 2, function(x) any(is.na(x)))
+
+# now for columns, INTER1, INTER2 and INTERACTION numerical substitutes for
+# categories are provided. replace them with the actual values from the 
+# codebook.
+# inter1
+
+acled$inter1 <- as.character(acled$inter1)
+
+table(acled$inter1)
+
+lut1 <- c("1" = "Government or mutinous force", "2" = "Rebel force",
+          "3" = "Political militia", "4" = "Ethnic militia", 
+          "5" = "Rioters", "6" = "Protesters", "7" = "Civilians", 
+          "8" = "Outside/external force")
+
+acled$inter1 <- lut1[acled$inter1]
+
+head(acled$inter1)
+
+# interaction
+acled$interaction <- as.character(acled$interaction)
+table(acled$interaction)
+
+lut3 <- c(
+  "10" = "SOLE MILITARY ACTION", "11" = "MILITARY VERSUS MILITARY",
+  "12" = "MILITARY VERSUS REBELS", "13" = "MILITARY VERSUS POLITICAL MILITIA",
+  "14" = "MILITARY VERSUS COMMUNAL MILITIA", "15" = "MILITARY VERSUS RIOTERS",
+  "16" = "MILITARY VERSUS PROTESTERS", "17" = "MILITARY VERSUS CIVILIANS",
+  "18" = "MILITARY VERSUS OTHER", "20" = "SOLE REBEL ACTION ",
+  "22" = "REBELS VERSUS REBELS", "23" = "REBELS VERSUS POLITICAL MILIITA",
+  "24" = "REBELS VERSUS COMMUNAL MILITIA", "25" = "REBELS VERSUS RIOTERS",
+  "26" = "REBELS VERSUS PROTESTERS", "27" = "REBELS VERSUS CIVILIANS",
+  "28" = "REBELS VERSUS OTHERS", "30" = "SOLE POLITICAL MILITIA ACTION",
+  "33" = "POLITICAL MILITIA VERSUS POLITICAL MILITIA", 
+  "34" = "POLITICAL MILITIA VERSUS COMMUNAL MILITIA", 
+  "35" = "POLITICAL MILITIA VERSUS RIOTERS", 
+  "36" = "POLITICAL MILITIA VERSUS PROTESTERS", 
+  "37" = "POLITICAL MILITIA VERSUS CIVILIANS",
+  "38" = "POLITICAL MILITIA VERSUS OTHERS",
+  "40" = "SOLE COMMUNAL MILITIA ACTION", 
+  "44" = "COMMUNAL MILITIA VERSUS COMMUNAL MILITIA", 
+  "45" = "COMMUNAL MILITIA VERSUS RIOTERS", 
+  "46" = "COMMUNAL MILITIA VERSUS PROTESTERS", 
+  "47" = "COMMUNAL MILITIA VERSUS CIVILIANS", 
+  "48" = "COMMUNAL MILITIA VERSUS OTHER","50" = "SOLE RIOTER ACTION", 
+  "55" = "RIOTERS VERSUS RIOTERS", "56" = "RIOTERS VERSUS PROTESTERS", 
+  "57" = "RIOTERS VERSUS CIVILIANS", "58" = "RIOTERS VERSUS OTHERS", 
+  "60" = "SOLE PROTESTER ACTION", "66" = "PROTESTERS VERSUS PROTESTERS", 
+  "67" = "PROTESTERS VERSUS CIVILIANS", "68" = "PROTESTERS VERSUS OTHER", 
+  "70" = "SOLE CIVILIANS", "77" = "CIVILIANS VERSUS CIVILIANS", 
+  "78" = "OTHER ACTOR VERSUS CIVILIANS", "80" = "SOLE OTHER ACTION", 
+  "88" = "OTHERS VERSUS OTHERS")
+
+acled$interaction <- lut3[acled$interaction]
+head(acled$interaction)
+
+# convert LONGITUDE and LATITUDE columns to Numeric
+acled$longitude <- as.numeric(acled$longitude)
+acled$latitude <- as.numeric(acled$latitude)
+
+# convert actor1 and actor2 to factor
+acled$actor1 <- as.factor(acled$actor1)
+acled$actor2 <- as.factor(acled$actor2)
+
+# the event date column is in DD/MM/YYYY format. assign this to the dataset 
+# using dmy() function
+head(acled$event_date)
+acled$event_date <- lubridate::dmy(acled$event_date)
+head(acled$event_date)
+
+# for further analysis and aggregating data on monthly basis, mutate the 
+# dataset to add a column for month
+acled %<>% dplyr::mutate(month = lubridate::month(acled$event_date))
+
+# sum by lat/long and month
+acled$longlat <- paste(acled$longitude, acled$latitude, sep = ", ")
+
+acled$ym <- zoo::as.yearmon(
+  paste(acled$year, acled$month, sep = "-"), "%Y-%m")
+
+#acled_dissag<-acled %>% 
+#  dplyr::group_by(longitude, latitude, ym, event_type) %>% 
+#  dplyr::summarise(fatalities = sum(fatalities, na.rm = TRUE))
+```
+
+We look for potential duplicate events in the data by inspecting instances where all the main variables display the same value, and drop redundant observations. This process lead us to drop 31 observations (the total number of observations in ACLED is then 4071).
+
+```{r, include = FALSE}
+
+# inspecting duplicates
+duplic <- acled[
+  duplicated(
+    acled[ , c(
+      "event_date", "year", "time_precision", "event_type", 
+      "sub_event_type",  "actor1", "assoc_actor_1", "inter1", "actor2", 
+      "assoc_actor_2", "inter2",  "interaction", "region", "country", 
+      "admin1", "admin2", "admin3", "location", "latitude", "longitude", 
+      "geo_precision")]),]
+
+nrow(duplic)
+ 
+#duplic2 <- acled[
+#  !duplicated(
+#    acled[ , c("event_date", "year", "time_precision", "event_type", 
+#               "sub_event_type",  "actor1", "assoc_actor_1", "inter1", 
+#               "actor2", "assoc_actor_2", "inter2",  "interaction", 
+#               "region", "country", "admin1", "admin2", "admin3", 
+#               "location", "latitude", "longitude", "geo_precision")]),]
+
+#compare <- setdiff(duplic2, duplic)
+
+# deleting duplicates
+acled <- acled[
+  !duplicated(
+    acled[ , c(
+      "event_date", "year", "time_precision", "event_type", 
+      "sub_event_type",  "actor1", "assoc_actor_1", "inter1", "actor2", 
+      "assoc_actor_2", "inter2",  "interaction", "region", "country", 
+      "admin1", "admin2", "admin3", "location", "latitude", "longitude", 
+      "geo_precision")]),]
+
+```
+
+Moreover, the structure of the ACLED dataset is in long format, meaning that event spanning multiple days are registered as separate observations. This is in contrast with other conflict event data sources, where one event corresponds to one observation. For this reason, we try to reshape the ACLED dataset into wide format. We do this by looking for events occurring on consecutive days in the same location and involving the same actors, and transforming them into the same unique event.
+
+After reshaping, the number of observations decreases further to 3700 observations.
+
+```{r, include = FALSE}
+
+# reshaping from long to wide
+data.table::setDT(acled)
+
+acled[, Date := as.Date(event_date, format = '%Y/%m/%d')]
+
+acled_old <- acled #keep old data
+
+acled <- acled_old[
+  order(longlat, event_type, actor1, actor2, year, time_precision, 
+        sub_event_type, assoc_actor_1, inter1, assoc_actor_2, inter2, 
+        interaction, region,  country, admin1,  admin2, admin3, location, 
+        latitude, longitude, geo_precision, fatalities, Date), 
+  .(start = min(Date), end = max(Date)), 
+          by = .(longlat, event_type, actor1, actor2, year, time_precision, 
+                 sub_event_type, assoc_actor_1, inter1, assoc_actor_2, 
+                 inter2, interaction, region,  country, admin1,  admin2, 
+                 admin3, location, latitude, longitude, geo_precision, 
+                 fatalities, 
+                 g = cumsum(c(0, diff(Date)) != 1))]
+
+nrow(acled)
+
+```
+
+```{r, include=FALSE}
+
+# remove intermediary objects
+rm(acled_old, duplic, lut1, lut3)
+
+```
+
+## GTD 
+
+Subsetting the GTD dataset to years between 1997 and 2017 results in 109 observations.
+
+```{r, include = FALSE}
+
+gtd <- read.csv(paste0(fp_data, "/GTD/globalterrorismdb_0221dist.csv"))
+
+gtd <- subset(gtd, country_txt == "Ethiopia")
+unique(gtd$iyear)
+
+# Subset to 1996+ otherwise you get points outside of (current) Ethiopia
+gtd <- subset(gtd, iyear >= 1997)
+gtd <- subset(gtd, iyear <= 2017) # possible to extend
+
+nrow(gtd)
+
+```
+
+We also look for potential duplicate observations by inspecting instances where the main variables have the same value, and drop 8 duplicated events, leading to a total of 101 observations.
+
+```{r, include = FALSE}
+
+# inspecting duplicates
+duplic <- gtd[
+  duplicated(
+    gtd[ , c(
+      "iyear", "imonth", "iday", "approxdate",  "extended", "resolution", 
+      "country", "country_txt", "region",  "region_txt", "provstate", 
+      "city", "location", "latitude", "longitude", "specificity", 
+      "attacktype1", "attacktype1_txt", "attacktype2", "attacktype2_txt", 
+      "attacktype3", "attacktype3_txt", "targtype1", "targtype1_txt", 
+      "targsubtype1", "targsubtype1_txt", "corp1", "target1", "natlty1", 
+      "natlty1_txt", "targtype2", "targtype2_txt", "targsubtype2", 
+      "targsubtype2_txt", "corp2", "target2", "natlty2", "natlty2_txt", 
+      "targtype3", "targtype3_txt", "targsubtype3", "targsubtype3_txt", 
+      "corp3", "target3", "natlty3", "natlty3_txt", "gname", "gsubname", 
+      "gname2", "gsubname2", "gname3", "gsubname3", "motive", 
+      "guncertain1", "guncertain2", "guncertain3", "individual", "nperps", 
+      "nperpcap", "claimed", "claimmode", "claimmode_txt", "claim2", 
+      "claimmode2", "claimmode2_txt", "claim3", "claimmode3", 
+      "claimmode3_txt", "compclaim", "weaptype1", "weaptype1_txt", 
+      "weapsubtype1", "weapsubtype1_txt", "weaptype2", "weaptype2_txt", 
+      "weapsubtype2", "weapsubtype2_txt", "weaptype3", "weaptype3_txt", 
+      "weapsubtype3", "weapsubtype3_txt", "weaptype4", "weaptype4_txt", 
+      "weapsubtype4", "weapsubtype4_txt", "weapdetail", "nkill", "nkillus", 
+      "nkillter", "nwound", "nwoundus", "nwoundte", "property", 
+      "propextent", "propextent_txt", "propvalue", "propcomment", 
+      "ishostkid", "nhostkid", "nhostkidus", "nhours", "ndays")]),] 
+
+
+# deleting duplicates
+gtd <- gtd[
+  !duplicated(
+    gtd[ , c(
+      "iyear", "imonth", "iday", "approxdate",  "extended", "resolution", 
+      "country", "country_txt", "region",  "region_txt", "provstate", 
+      "city", "location", "latitude", "longitude", "specificity", 
+      "attacktype1", "attacktype1_txt", "attacktype2", "attacktype2_txt", 
+      "attacktype3", "attacktype3_txt", "targtype1", "targtype1_txt", 
+      "targsubtype1", "targsubtype1_txt", "corp1", "target1", "natlty1", 
+      "natlty1_txt", "targtype2", "targtype2_txt", "targsubtype2", 
+      "targsubtype2_txt", "corp2", "target2", "natlty2", "natlty2_txt", 
+      "targtype3", "targtype3_txt", "targsubtype3", "targsubtype3_txt", 
+      "corp3", "target3", "natlty3", "natlty3_txt", "gname", "gsubname", 
+      "gname2", "gsubname2", "gname3", "gsubname3", "motive", 
+      "guncertain1", "guncertain2", "guncertain3", "individual", "nperps", 
+      "nperpcap", "claimed", "claimmode", "claimmode_txt", "claim2", 
+      "claimmode2", "claimmode2_txt", "claim3", "claimmode3", 
+      "claimmode3_txt", "compclaim", "weaptype1", "weaptype1_txt", 
+      "weapsubtype1", "weapsubtype1_txt", "weaptype2", "weaptype2_txt", 
+      "weapsubtype2", "weapsubtype2_txt", "weaptype3", "weaptype3_txt", 
+      "weapsubtype3", "weapsubtype3_txt", "weaptype4", "weaptype4_txt", 
+      "weapsubtype4", "weapsubtype4_txt", "weapdetail", "nkill", "nkillus", 
+      "nkillter", "nwound", "nwoundus", "nwoundte", "property", 
+      "propextent", "propextent_txt", "propvalue", "propcomment", 
+      "ishostkid", "nhostkid", "nhostkidus", "nhours", "ndays")]),]
+
+duplic$eventid
+
+# another event that is actually a duplicate, but has been inserted twice 
+# with slightly different coding:
+gtd <- gtd[!(gtd$eventid == 199702100009),]
+
+```
+
+To allow for the merging process with `meltt`, we also drop entries where geo-tagged or date information is missing or incomplete, leading to 99 observations.
+
+```{r, include = FALSE}
+
+# convert dates to class date. rename variables to match taxonomy names. 
+# drop entries missing date information. drop entries missing geo-tagged 
+# information.
+gtd %<>%  
+  dplyr::mutate(date = as.Date(paste0(iyear, "-", imonth, "-", iday))) %>% 
+  dplyr::filter(!is.na(date)) %>% 
+  dplyr::filter(!is.na(longitude)) %>%  
+  as.data.frame(.)
+
+nrow(gtd)
+
+```
+
+```{r}
+
+# remove intermediaries
+rm(duplic)
+
+```
+
+## GED
+
+Subsetting the GED dataset to years between 1997 and 2017 produces 1659 observations.
+
+```{r, include = FALSE}
+
+load(paste0(fp_data, "/UCDP GED/ged201-RData/ged201.RData"))
+ged <- subset(ged201, country == "Ethiopia")
+unique(ged$year)
+
+# Subset to 1996+ otherwise you get points outside of (current) Ethiopia
+ged <- subset(ged, year >= 1997)
+ged <- subset(ged, year <= 2017) # possible to extend
+
+```
+
+Again, we look for potential duplicated events by analyzing observations that display the same value for the main variables, and drop 1 duplicated event, for a total of 1658 observations.
+
+```{r, include = FALSE}
+
+# inspecting duplicates
+duplic <- ged[
+  duplicated(
+    ged[ , c(
+      "year", "active_year", "code_status", "type_of_violence", 
+      "conflict_dset_id", "conflict_new_id", "conflict_name", 
+      "dyad_dset_id", "dyad_new_id", "dyad_name", "side_a_dset_id", 
+      "side_a_new_id", "side_a", "side_b_dset_id", "side_b_new_id", 
+      "side_b", "number_of_sources", "source_article", "source_office",
+      "source_date", "source_headline", "source_original", "where_prec", 
+      "where_coordinates", "where_description",  "adm_1", "adm_2", 
+      "latitude", "longitude", "geom_wkt", "priogrid_gid", "country", 
+      "country_id", "region", "event_clarity", "date_prec", "date_start", 
+      "date_end", "deaths_a", "deaths_b", "deaths_civilians", 
+      "deaths_unknown", "best", "high", "low", "gwnoa", "gwnob")]),]
+ 
+# deleting duplicates
+# inspecting duplicates
+ged <- ged[
+  !duplicated(
+    ged[ , c(
+      "year", "active_year", "code_status", "type_of_violence", 
+      "conflict_dset_id", "conflict_new_id", "conflict_name", 
+      "dyad_dset_id", "dyad_new_id", "dyad_name", "side_a_dset_id", 
+      "side_a_new_id", "side_a", "side_b_dset_id", "side_b_new_id", 
+      "side_b", "number_of_sources", "source_article", "source_office",
+      "source_date", "source_headline", "source_original", "where_prec", 
+      "where_coordinates", "where_description",  "adm_1", "adm_2", 
+      "latitude", "longitude", "geom_wkt", "priogrid_gid", "country", 
+      "country_id", "region", "event_clarity", "date_prec", "date_start", 
+      "date_end", "deaths_a", "deaths_b", "deaths_civilians", 
+      "deaths_unknown", "best", "high", "low", "gwnoa", "gwnob")]),]
+
+```
+
+Following @Donnay2019 (Appendix, p.24), we swap the primary actor (side_a) and the secondary actor (side_b) for all events coded as state-based violence (type of violence = 1).
+
+```{r, include = FALSE}
+
+# following Donnay et al. 2019 Appendix, p.24, change side_a in side_b for 
+# type of violence = 1
+unique(paste(ged$side_a[ged$type_of_violence == 1], 
+             ged$side_b[ged$type_of_violence == 1], sep = ", "))
+
+unique(ged$side_a[ged$type_of_violence == 1])
+unique(ged$side_b[ged$type_of_violence == 1])
+
+ged$side_a[ged$type_of_violence == 1] <- 
+  ged$side_b[ged$type_of_violence == 1]
+
+```
+
+```{r,include=FALSE}
+
+# remove intermediaries
+rm(duplic, ged201)
+
+```
+
+## SCAD
+
+Subsetting the SCAD dataset to years between 1997 and 2016 results in 175 observations.
+
+```{r, include = FALSE}
+
+scad <- fread(
+  paste0(fp_data,
+         "SCAD/SCAD2018Africa_Final.csv/SCAD2018Africa_Final.csv"))
+
+scad <- subset(scad, countryname == "Ethiopia")
+
+unique(scad$styr)
+
+# Subset to 1996+ otherwise you get points outside of (current) Ethiopia
+scad <- subset(scad, styr >= 1997)
+scad <- subset(scad, eyr <= 2017)
+
+```
+
+
+As for the previous datasets, we look for potential instances of duplicated events, but do not find any in the SCAD data.
+
+
+```{r, include = FALSE}
+
+# inspecting duplicates
+duplic <- scad[duplicated(scad[ , c("ccode" , "countryname",    
+"startdate"   , "enddate"   , "duration"    , "stday"      ,   
+"stmo"        , "styr"      , "eday"        , "emo"        ,   
+"eyr"         , "etype"     , "escalation"  , "actor1"     ,   
+"actor2"      , "actor3"    , "target1"     , "target2"    ,   
+"cgovtarget"  , "rgovtarget", "npart"       , "ndeath"     ,   
+"repress"     , "elocal"    , "ilocal"      , "sublocal"   ,   
+"locnum"      , "gislocnum" , "issue1"      , "issue2"     ,   
+"issue3"      , "female_event", "lgtbq_issue",  "acd_questionable", 
+"latitude"    , "longitude" , "geo_comments", "location_precision")]),]
+
+# deleting duplicates
+scad <- scad[!duplicated(scad[ , c("ccode" , "countryname",    
+"startdate"   , "enddate"   , "duration"    , "stday"      ,   
+"stmo"        , "styr"      , "eday"        , "emo"        ,   
+"eyr"         , "etype"     , "escalation"  , "actor1"     ,   
+"actor2"      , "actor3"    , "target1"     , "target2"    ,   
+"cgovtarget"  , "rgovtarget", "npart"       , "ndeath"     ,   
+"repress"     , "elocal"    , "ilocal"      , "sublocal"   ,   
+"locnum"      , "gislocnum" , "issue1"      , "issue2"     ,   
+"issue3"      , "female_event", "lgtbq_issue",  "acd_questionable", 
+"latitude"    , "longitude" , "geo_comments", "location_precision")]),]
+
+```
+
+```{r}
+
+# remove intermediaries
+rm(duplic)
+
+```
+
+
+# Developing taxonomies
+
+## Actor taxonomy
+
+We develop the actor taxonomies separately for each conflict dataset.
+
+```{r, include = FALSE}
+
+####ACLED####
+# Create dataframe with data.source and base.categories
+base.categories <- levels(acled$actor1)
+data.source <- rep("acled",length(base.categories))
+acled_actor_tax <- as.data.frame(cbind(data.source, base.categories))
+
+head(acled_actor_tax)
+
+# Need to create variable actor_level_1_txt starting from base.categories
+# government, violent groups, civilian groups, civilians, movement groups
+# there is not civilian groups here
+acled_actor_tax$actor_level_1_txt[grepl("Government",acled_actor_tax$base.categories)] <- "government"
+acled_actor_tax$actor_level_1_txt[grepl("Military",acled_actor_tax$base.categories)] <- "government"
+acled_actor_tax$actor_level_1_txt[grepl("Police",acled_actor_tax$base.categories)] <- "government"
+acled_actor_tax$actor_level_1_txt[grepl("Militia",acled_actor_tax$base.categories)] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[grepl("Rioters",acled_actor_tax$base.categories)] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[grepl("Armed Group",acled_actor_tax$base.categories)] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[grepl("Civilians",acled_actor_tax$base.categories)] <- "civilians"
+acled_actor_tax$actor_level_1_txt[grepl("Protesters",acled_actor_tax$base.categories)] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[grepl("Party",acled_actor_tax$base.categories)] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[grepl("Movement",acled_actor_tax$base.categories)] <- "movement groups"
+
+# A few have not been categorised, so do it manually
+acled_actor_tax$base.categories[is.na(acled_actor_tax$actor_level_1_txt)]
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="AIAI: Al-Itihad Al-Islamia"] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="Al-Shabiba Al-Islamiyah"] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="Al Shabaab"] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="Amhara Tegadlo"] <- "movement groups"
+# These are more difficult to categorise
+acled_actor_tax$base.categories[is.na(acled_actor_tax$actor_level_1_txt)]
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="ARDUF: Afar Revolutionary Democratic Unity Front"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EDU: Front of the Ethiopian Democratic Union Forces"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EPPF: Ethiopian Peoples Patriotic Front"] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EPRDF: Ethiopian Peoples Revolutionary Democratic Front"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EPRDF: Ethiopian People's Revolutionary Democratic Front"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EUFF: Ethiopian Unity and Freedom Force"] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="MEDREK: Ethiopian Federal Democratic Unity Forum"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="OLF: Oromo Liberation Front"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="ONLF: Ogaden National Liberation Front"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="OPDO: Oromo Peoples Democratic Organization"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="RRA: Rahanweyn Resistance Army"] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="RSADO: Red Sea Afar Democratic Organisation"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="SLF: Sidama Liberation Front"] <- "violent groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="TPLF: Tigray Peoples Liberation Front"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="TPLF: Tigray People's Liberation Front"] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="UWSLF: United Western Somali Liberation Front"] <- "violent groups"
+acled_actor_tax$base.categories[is.na(acled_actor_tax$actor_level_1_txt)]
+
+# Need to create variable actor_level_2_txt starting from actor_level_1_txt
+# government and violent groups are violent groups, the others are nonviolent groups
+acled_actor_tax$actor_level_2_txt <- "nonviolent groups"
+acled_actor_tax$actor_level_2_txt[acled_actor_tax$actor_level_1_txt=="government"|
+                                 acled_actor_tax$actor_level_1_txt=="violent groups"] <- "violent groups"
+```
+
+
+```{r, include = FALSE}
+
+# checking that ACLED's actor taxonomy covers all actors
+acled_actor <- acled %>% 
+  dplyr::left_join(
+    acled_actor_tax, by = c("actor1" = "base.categories")) %>% 
+  dplyr::select(actor1, actor2, actor_level_1_txt, actor_level_2_txt)
+
+# looking for missing values (all outputs should be FALSE)
+apply(acled_actor, 2, function(x) any(is.na(x)))
+
+```
+
+```{r, include = FALSE}
+
+####GED####
+# Create dataframe with data.source and base.categories
+base.categories<-unique(ged$side_a)
+data.source<-rep("ged",length(base.categories))
+ged_actor_tax <- as.data.frame(cbind(data.source,base.categories))
+
+head(ged_actor_tax)
+
+# Need to create variable actor_level_1_txt starting from base.categories
+# all non-state are violent groups, otherwise government
+ged_actor_tax$actor_level_1_txt <- "violent groups"
+ged_actor_tax$actor_level_1_txt[grepl("Government",ged_actor_tax$base.categories)] <- "government"
+
+# Need to create variable actor_level_2_txt starting from actor_level_1_txt
+# all are violent groups Donnay et al. Appendix p.22
+ged_actor_tax$actor_level_2_txt <- "violent groups"
+
+# checking that GED's actor taxonomy covers all actors
+ged_actor <- ged %>% 
+  dplyr::left_join(ged_actor_tax, by = c("side_a" = "base.categories")) %>% 
+  dplyr::select(side_a, side_b, actor_level_1_txt, actor_level_2_txt)
+
+# looking for missing values
+apply(ged_actor, 2, function(x) any(is.na(x)))
+
+```
+
+```{r, include = FALSE}
+
+####SCAD####
+# Create dataframe with data.source and base.categories
+base.categories<-unique(as.character(scad$actor1))
+data.source<-rep("scad",length(base.categories))
+scad_actor_tax <- as.data.frame(cbind(data.source,base.categories))
+
+# Need to create variable actor_level_1_txt starting from base.categories
+# government, violent groups, civilian groups, civilians, movement groups, religious groups
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="students"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Ethiopians"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="taxi drivers"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="demonstrators"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Demonstrators angry over the deaths Irreecha festival attendees"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Armed men"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="voters"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="journalists"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="women"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Bandits"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="attackers"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="OLF"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="ONLF"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="al-Itahad al-Islami"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Al-Itihad Al-Islamiya"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[grepl("opposition",scad_actor_tax$base.categories)] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[grepl("tribe",tolower(scad_actor_tax$base.categories))] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Oromo ethnic group"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Ethiopian People's Revolutionary Democratic Front"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="pro-government supporters"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[grepl("protesters",tolower(scad_actor_tax$base.categories))] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Gunmen"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[grepl("clan",scad_actor_tax$base.categories)] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Islamic youth"] <- "religious groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="market traders"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Christians"] <- "religious groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Muslims"] <- "religious groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="truckers"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Shopkeepers"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Soldiers"] <- "government"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Security forces"] <- "government"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Suspected security forces"] <- "government"
+scad_actor_tax$actor_level_1_txt[grepl("Police",scad_actor_tax$base.categories)] <- "government"
+scad_actor_tax$actor_level_1_txt[grepl("gunmen",scad_actor_tax$base.categories)] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Anuak militants"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[grepl("bombers",scad_actor_tax$base.categories)] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Attackers"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Rebels"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Eritrean Refugees"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="South Sudanese refugees"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Participants in Irreecha religious festival"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[grepl("Students",scad_actor_tax$base.categories)] <- "civilians"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Athletes"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Bashir Isaac Abdulla, demonstration organizer"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Coalition for Unity and Democracy"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Government-sponsored march"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[grepl("Ethnic",scad_actor_tax$base.categories)] <- "civilians"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Eritrean exiles"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Unknown attackers"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Ogaden National Liberation Front"] <- "movement groups"
+
+# these categories are new:
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Cattle Herders"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Somali mob"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Oromo rioters"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Somali rioters"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Somali Rioters"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Security Forces"] <- "government"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Ethiopian government"] <- "government"
+
+# looking into the unknowns:
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Unknown attackers"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Unknown armed men"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Unknown Bombers"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Unidentified assailants"] <- "violent groups"
+
+```
+
+```{r, include = FALSE}
+
+# checking that SCAD's actor taxonomy covers all actors
+scad_actor <- scad %>% 
+  dplyr::left_join(
+    scad_actor_tax, by = c("actor1" = "base.categories")) %>% 
+  dplyr::mutate(base.categories = actor1)
+
+# looking for missing values
+apply(scad_actor_tax, 2, function(x) any(is.na(x)))
+
+# There are further "unknowns" that need to be coded manually: to do so, we merge again with the original SCD data, and look  more precisely in the notes for clues about the unknown actors
+scad_actor$actor_level_1_txt[scad_actor$actor1=="Unknown" & grepl("Gunmen",scad_actor$issuenote)] <- "violent groups" # in this case, we see that while the actor is unknown, there are "gunmen" driving an attack in the notes
+scad_actor$base.categories[scad_actor$actor1=="Unknown" & grepl("Gunmen",scad_actor$issuenote)] <- "Unknown gunmen" # we also edit the base.categories variable, as it will later be necessary to reconstruct the actor taxonomy
+scad$actor1[scad$actor1=="Unknown" & grepl("Gunmen",scad$issuenote)] <- "Unknown gunmen" # we also edit the original scad dataset to mirror these changes
+
+scad_actor$actor_level_1_txt[scad_actor$actor1=="unknown" & grepl("Violent clashes",scad_actor$issuenote)] <- "violent groups"  # in this case, we see that while the actor is unknown, "violent clashes" are described in the notes
+scad_actor$base.categories[scad_actor$actor1=="unknown" & grepl("Violent clashes",scad_actor$issuenote)] <- "Unknown violent clashes" # we also edit the base.categories variable, as it will later be necessary to reconstruct the actor taxonomy
+scad$actor1[scad$actor1=="unknown" & grepl("Violent clashes",scad$issuenote)] <- "Unknown violent clashes" # we also edit the original scad dataset to mirror these changes
+
+scad_actor$actor_level_1_txt[scad_actor$actor1=="Unknown" & grepl("grenade",scad_actor$issuenote)] <- "violent groups"  # in this case, we see that while the actor is unknown, a grenade attack is described in the notes
+scad_actor$base.categories[scad_actor$actor1=="Unknown" & grepl("grenade",scad_actor$issuenote)] <- "Unknown attack" # we also edit the base.categories variable, as it will later be necessary to reconstruct the actor taxonomy
+scad$actor1[scad$actor1=="Unknown" & grepl("grenade",scad$issuenote)] <- "Unknown attack" # we also edit the original scad dataset to mirror these changes
+
+scad_actor$actor_level_1_txt[scad_actor$actor1=="unknown" & grepl("grenade",scad_actor$issuenote)] <- "violent groups" # in this case, we see that while the actor is unknown, a grenade attack is described in the notes
+scad_actor$base.categories[scad_actor$actor1=="unknown" & grepl("grenade",scad_actor$issuenote)] <- "Unknown attack" # we also edit the base.categories variable, as it will later be necessary to reconstruct the actor taxonomy
+scad$actor1[scad$actor1=="unknown" & grepl("grenade",scad$issuenote)] <- "Unknown attack" # we also edit the original scad dataset to mirror these changes
+
+# Now we reconstruct SCAD's actor taxonomy:
+scad_actor_tax_old <- scad_actor_tax #saving the old one for checks
+
+scad_actor_tax <- scad_actor %>% #creating the new one from scad_actor
+  dplyr::select(data.source, base.categories, actor_level_1_txt)
+
+scad_actor_tax <- scad_actor_tax[!duplicated(scad_actor_tax$base.categories),] #keeping only unique cases of base.categories, i.e., getting the real actor taxonomy
+
+# Need to create variable actor_level_2_txt starting from actor_level_1_txt
+# government and violent groups are violent groups, the others are nonviolent groups
+scad_actor_tax$actor_level_2_txt <- "nonviolent groups"
+scad_actor_tax$actor_level_2_txt[scad_actor_tax$actor_level_1_txt=="government"|
+                                   scad_actor_tax$actor_level_1_txt=="violent groups"] <- "violent groups"
+
+# recheck for missing values
+apply(scad_actor_tax, 2, function(x) any(is.na(x)))
+
+```
+
+
+
+
+```{r, include = FALSE}
+
+####GTD####
+# Create dataframe with data.source and base.categories
+base.categories<-unique(as.character(gtd$gname))
+data.source<-rep("gtd",length(base.categories))
+gtd_actor_tax <- as.data.frame(cbind(data.source,base.categories))
+
+
+# Need to create variable actor_level_1_txt starting from base.categories
+# Donnay et al. Appendix p.22: level 1 and level 2 violent groups
+# So do not care about lines 146-165
+gtd_actor_tax$actor_level_1_txt <- "violent groups"
+gtd_actor_tax$actor_level_2_txt <- "violent groups"
+
+# checking that GTD's actor taxonomy covers all actors
+gtd_actor <- gtd %>% 
+  dplyr::left_join(gtd_actor_tax, by = c("gname" = "base.categories")) %>% 
+  dplyr::select(gname, gname2, gname3, actor_level_1_txt, actor_level_2_txt)
+
+# looking for missing values
+apply(gtd_actor, 2, function(x) any(is.na(x)))
+
+```
+
+```{r, include = FALSE}
+
+####MERGE DIFFERENT ACTOR TAXONOMIES####
+my_actor_tax <- rbind(acled_actor_tax,ged_actor_tax,scad_actor_tax,gtd_actor_tax)
+
+# looking for missing values
+apply(my_actor_tax, 2, function(x) any(is.na(x)))
+
+# printing actr taxonomy as csv file
+#write_csv(my_actor_tax, file = '~/Dropbox/conflict-datasets/Data/actor_taxonomy_v2.csv'
+
+```
+
+
+## Event taxonomy
+
+We base our event taxonomy on @Donnay2019.
+
+```{r, include = FALSE}
+
+# checking that ACLED's event taxonomy covers all event types
+acled_event <- acled %>% 
+  dplyr::left_join(
+    event_tax %>% 
+      dplyr::filter(data.source == "acled"), 
+    by = c("event_type" = "base.categories")) %>% 
+  dplyr::select(event_type, Level_1_text, Level_2_text, Level_3_text)
+
+# looking for missing values
+apply(acled_event, 2, function(x) any(is.na(x)))
+
+# checking that GED's event taxonomy covers all event types
+ged_event <- ged %>% 
+  dplyr::mutate(type_of_violence = as.character(type_of_violence)) %>% 
+  dplyr::left_join(
+    event_tax %>% 
+      dplyr::filter(data.source == "ged"), 
+    by = c("type_of_violence" = "base.categories")) %>% 
+  dplyr::select(type_of_violence, Level_1_text, Level_2_text, Level_3_text)
+
+# looking for missing values
+apply(ged_event, 2, function(x) any(is.na(x)))
+
+# checking that GTD's event taxonomy covers all event types
+gtd_event <- gtd %>% 
+  dplyr::mutate(attacktype1 = as.character(attacktype1)) %>% 
+  dplyr::left_join(
+    event_tax %>% 
+      dplyr::filter(data.source == "gtd"), 
+    by = c("attacktype1" = "base.categories")) %>% 
+  dplyr::select(attacktype1, Level_1_text, Level_2_text, Level_3_text)
+
+# looking for missing values
+apply(gtd_event, 2, function(x) any(is.na(x)))
+
+# checking that SCAD's event taxonomy covers all event types
+scad_event <- scad %>% 
+  dplyr::mutate(etype = as.character(etype)) %>% 
+  dplyr::left_join(
+    event_tax %>% 
+      dplyr::filter(data.source == "scad"),
+    by = c("etype" = "base.categories")) %>% 
+  dplyr::select(etype, Level_1_text, Level_2_text, Level_3_text)
+
+# looking for missing values
+apply(scad_event, 2, function(x) any(is.na(x)))
+
+```
+
+
+## Precision taxonomy
+
+We use the precision taxonomy developed by @Donnay2019.
+
+# Integrating with ``meltt``
+
+After having developed the taxonomies, we need to define a temporal and spatial window that the MELTT algorithm will considers when looking for potential duplicate events.
+
+Again, we follow @Donnay2019 and set our temporal fuzziness equal to one day and our spatial fuzziness to 3 km.
+
+```{r, include= FALSE}
+
+# Store all three taxonomies as lists
+taxonomy <- list(
+  actor_tax = my_actor_tax, #different from "actor_tax" developed by Donnay
+  event_tax = event_tax,
+  prec_tax = prec_tax)
+
+# final cleaning of datasets
+#ACLED
+acled <- 
+  acled %>% 
+  # Convert dates to class date. Rename variables to match taxonomy names. 
+  dplyr::mutate(
+    date = as.Date(start, format = "%d %B %Y"),
+    enddate = as.Date(end, format = "%d %B %Y"),
+    event_tax = as.character(event_type),
+    actor_tax = actor1,
+    prec_tax = geo_precision) %>% 
+  # convert all column names to lower case
+  dplyr::rename_all(tolower) %>% 
+  as.data.frame(.)
+
+#GED
+ged <- 
+  ged %>%  
+  # Convert dates to class date. Rename variables to match taxonomy names. 
+  dplyr::mutate(
+    date = as.Date(date_start),
+    enddate = as.Date(date_end),
+    event_tax = type_of_violence,
+    actor_tax = side_a,
+    prec_tax = where_prec) %>% 
+  as.data.frame(.)
+
+
+#SCAD
+scad <- 
+  scad %>% 
+  
+  # Convert dates to class date. Rename variables to match taxonomy names. 
+  dplyr::mutate(
+    date = as.Date(startdate,"%d-%b-%y"),
+    enddate = as.Date(enddate,"%d-%b-%y"),
+    event_tax = etype,
+    actor_tax = actor1,
+    prec_tax = locnum) %>% 
+  as.data.frame(.)
+
+
+#GTD
+gtd <- 
+  gtd %>%  
+  # Convert dates to class date. Rename variables to match taxonomy names. 
+  dplyr::mutate(
+    enddate = date,
+    event_tax = attacktype1,
+    actor_tax = gname,
+    prec_tax = specificity) %>% 
+  as.data.frame(.)
+
+```
+
+
+```{r}
+
+rm(acled_actor, acled_actor_tax, acled_event, ged_actor, ged_actor_tax,
+   ged_event, gtd_actor, gtd_actor_tax, gtd_event, scad_actor, 
+   scad_actor_tax, scad_actor_tax_old, scad_event, base.categories,
+   data.source)
+
+```
+
+From here, we can integrate the four conflict dataset using the ``meltt`` package. The algorithm behind ``meltt``  allows to adjust the fuzziness of the temporal and spatial windows for greater flexibility in the integration of conflict datasets. Using a loop, we inspect possible combinations of a temporal window ranging between 1 and 2 days and a spatial window between 1 and 5 km.
+
+```{r, echo=FALSE}
+
+# Run loop to compare the number of matched events and flagged duplicates using 
+# different temporal and spatial specifications
+# E.g., any combination between 1-5km as spatial fuzziness and 1-2 days as 
+# temporal fuzziness
+
+taxonomy$event_tax$X <- NULL
+taxonomy$prec_tax$X <- NULL
+
+for (i in 1:2) { # temporal specifications
+  for (j in 1:5) { # spatial specifications
+  output <- meltt::meltt(
+    acled, ged, gtd, scad, 
+    taxonomies = taxonomy,
+    twindow = i,
+    spatwindow = j)
+  print(output)
+  }
+}
+
+```
+
+Before selecting the preferred temporal and spatial windows, we inspect how the flagged and de-duplicated events change from one window specification to the other.
+
+For example, we compare specification with windows of one day and 1km, one day and 3km (@Donnay2019's recommended specification), and one day and 5 km.
+
+```{r, include= FALSE}
+# after integrating the data, we compare the output of different spatio-temporal specifications:
+
+# 1 day, 1 km:
+output_km1 <-  meltt::meltt(acled, ged, gtd, scad, taxonomies = taxonomy,
+               twindow = 1, spatwindow = 1)
+output_km1 # Summary of the integration
+
+# 1 day, 3 km:
+output_km3 <-  meltt::meltt(acled, ged, gtd, scad, taxonomies = taxonomy,
+               twindow = 1, spatwindow = 3)
+output_km3 # Summary of the integration
+
+# 1 day, 5 km:
+output_km5 <-  meltt::meltt(acled, ged, gtd, scad, taxonomies = taxonomy,
+               twindow = 1, spatwindow = 5)
+output_km5 # Summary of the integration
+
+```
+
+## Comparing flagged and de-duplicated events acoss specifications
+
+We first look at the different number of potential duplicates (i.e., flagged events) that are generated by running MELTT using different spatio-temporal specifications. This is important because changing the fuzziness of the spatial and temporal windows means changing both the number events that will be dropped by `meltt` as acutal duplicates, and the number of flagged events that need to be manually reviewed after running the algorithm. We see that by increasing the spatio-temporal fuzziness from 1 day, 1km to @Donnay2019's recommended specification of 1 day, 3km, the number of matched events (i.e., "certain" duplicates according to `meltt`) and of flagged events (i.e., potential duplicates) also increases. However, further increasing to 1 day, 5 km only increases the number of matched events, not of flagged ones.
+
+
+```{r, include = FALSE}
+
+# Get flagged events
+flagged_km1 <- meltt::meltt_inspect(output_km1) #1 day, 1km specification
+flagged_km3 <- meltt::meltt_inspect(output_km3)
+flagged_km5 <- meltt::meltt_inspect(output_km5) #1 day, 5km specification
+
+# we see how many of these flagged event lists are "contained" in each other, 
+# i.e., how many of the events flagged as potential duplicates in the, e.g., 
+# 1km, 1 day specification are retained in the 5km, 1 day specification
+flagged_km3 %in% flagged_km1
+
+# look at which flagged events with 5km specification are included in 1km 
+# specification: we see that by increasing the spatial fuzziness, we have 4 new 
+# flagged events [37:38] and [41:42]
+flagged_km5 %in% flagged_km1
+flagged_km5 %in% flagged_km3
+
+```
+
+
+```{r, echo = FALSE}
+
+length(flagged_km1)
+length(flagged_km3)
+length(flagged_km5)
+
+```
+
+Besides the number of flagged events, we're interested in seeing how the MELTT algorithm classifies events as certain duplicates (i.e., matched events) or potential duplicates (i.e., flagged events) across spatio-temporal specifications, particularly when increasing the fuzziness. We thus analyze the events that are classified as certain duplicates (and hence will later be dropped) when increasing the spatio-temporal window from 1 day, 1km to 1 day, 5 km. We select two examples to illustrate this.
+
+This is done by comparing the "de-duplicated" lists of events produced by MELTT using different spatio-temporal specifications. In other words, we see how many events MELTT classifies as certain duplicates and drops when using a window of 1 day, 1 km, and then compare this "de-duplicated" list of events to that produced using a window of 1 day, 5 km.
+
+```{r, include = FALSE}
+
+# further inspecting duplicates by comparing the "deduplicated" lists, i.e., the lists of events without the events that have been matched as duplicates by MELTT
+deduplicated_km5 <- output_km5$processed[["deduplicated_index"]] # this is the de-duplicated list with 1 day, 5km specification, that is the "clean" list of events, without duplicates, only unique events
+deduplicated_km1 <- output_km1$processed[["deduplicated_index"]] # this is the de-duplicated list with 1day, 1km specification, that is the "clean" list of events, without duplicates, only unique events
+
+# event_matched
+event_matched_km5 <- output_km5$processed[["event_matched"]]
+event_contenders_km5 <- output_km5$processed[["event_contenders"]]
+complete_index_km5 <- output_km5$processed[["complete_index"]]
+episode_contenders_km5 <- output_km5$processed[["episode_contenders"]]
+
+```
+
+The number of elements in these two lists are, respectively:
+
+```{r, echo = TRUE}
+
+nrow(deduplicated_km1) #spatio-temporal fuzziness of 1 day, 1 km
+nrow(deduplicated_km5) #spatio-temporal fuzziness of 1 day, 5 km
+
+```
+
+
+We now look at how many of the observations in the `deduplicated_km1` dataframe are contained in the `deduplicated_km5`. In other words, we look for all the events which MELTT classified as certain duplicates and dropped when increasing the spatial fuzziness from 1 km to 5 km:
+
+```{r, echo = TRUE}
+
+new_duplicates <- dplyr::anti_join(deduplicated_km1, deduplicated_km5) # this dataframe includes all events that were classified as certain duplicates (i.e., matched events) when increasing the fuzziness from 1 day, 1km to 1 day, 5 km
+nrow(new_duplicates)
+
+```
+
+We see that increasing the fuzziness changes the number of certain duplicates. To check how MELTT is performing and to select an appropriate fuzziness, we look more into the new certain duplicates coming from the 5km specification, and manually check that they are indeed duplictaes.
+
+First, we look at the list in `new_duplicates` and select the following event as an example:
+
+```{r, echo = FALSE}
+
+# we look at the list in new_duplicates, and select the example with data == 4, event == 1, latitude ==9.304650 & longitude ==42.13260
+# we first look for this event in the original scad data, and identify it as event == 28
+potential_scad <- scad %>% dplyr::filter(id == 28) #we see this event happened on 11/02/1997
+head(potential_scad)
+
+```
+
+Due to the MELTT processing, we need to manually reconstruct to which event, from a different dataset, this SCAD example has been matched. By looking into the `meltt` output, we find that the matched event comes from ACLED. We then look into the ACLED original dataset for events with similar characteristics (in terms of date, longitude and latitude) to the SCAD example, and find two potentisal candidates. With a manual comparison, we see that the event that interests us is that happening on the 1997-02-10.
+
+```{r, echo = FALSE}
+# Due to the MELTT processing, we need to manually reconstruct to which event our example has been matched. We thus look in the event_matched list for the observation with data4 == 4 & event4 == 1 and see that the matched event comes from ACLED (data1 == 1) and is the event == 2906
+#we look for this ACLED event in the complete index, to reconstruct its details
+tofind_acled1 <- complete_index_km5 %>% 
+  dplyr::filter(event == 2906 & dataset == 1)
+head(tofind_acled1)
+
+#we now know the latitude and longitude of this event, and look for it in the ACLED data
+potential_acled1 <- acled %>% 
+  dplyr::filter(latitude == 9.3122 & longitude == 42.1238	& year == 1997)
+# with a manual comparison, we see that the event that interests us is that happening on the 1997-02-10
+head(potential_acled1)
+
+```
+
+
+We now repeat the same process with a different example. We select the following observation, originally coming from the GTD dataset, as our second example:
+
+```{r, echo = FALSE}
+
+#we do the same with a different example. We select the example with data == 3, event == 13, latitude ==8.980629 & longitude ==37.86505
+potential_gtd <- gtd %>% dplyr::filter(eventid == 200404170005) # we see this event happened on 17/04/2004
+head(potential_gtd)
+
+```
+
+We find hat the event matching our selected case also comes from ACLED. With a manual comparison, we see that the event that interests us is the one happening on the 2004-04-16.
+
+```{r, echo = FALSE}
+
+#We find our selected case in event_matched by looking for the case where data3 == 3 & event3== 13, and find the  matched event, which comes from ACLED (data1 ==1) and has event1==930.
+#we look for this ACLED event in the complete index, to reconstruct its details
+tofind_acled2 <- complete_index_km5 %>% 
+  dplyr::filter(event == 930 & dataset == 1)
+head(tofind_acled2)
+
+#we now know the latitude and longitude of this event, and look for it in the ACLED data
+potential_acled2 <- acled %>% 
+  dplyr::filter(latitude == 8.9833 & longitude == 37.85 & year == 2004)
+head(potential_acled2)
+#  with a manual comparison, we see that the event that interests us is that happening on the 2004-04-16
+
+```
+
+In both of these example, the new duplicates with the increased spatial fuzziness (1 day, 5 km) turned out to be indeed duplicates. While we do not manually review all of these instances, we decide to use the increased spatial fuzziness for the purpose of our data generation process.
+
+# Inspecting flagged events
+
+Using a temporal window of one day and a spatial window of 5km, ``meltt`` identified and removed 95 duplicate events, as well as 28 additional potential duplicates to be reviewed manually, from a starting point of 4981 observations. We can visualize the share of unique and duplicate events for each conflict dataset, as well as their distribution over time.
+
+```{r, echo = FALSE}
+
+plot(output_km5)
+t1 <- meltt::tplot(output_km5, time_unit = "weeks")
+t2 <- meltt::tplot(output_km5, time_unit = "months")
+gridExtra::grid.arrange(t1,t2)
+
+```
+
+
+When using a spatio-temporal specification of 1 day, 5 km, the ``meltt`` package flagged 42 events as potential duplicates (i.e., flagged events). We review all of these and code them manually as either unique or duplicate events.
+
+```{r, include = FALSE}
+
+# Get flagged events and inspect them manually
+flagged <- meltt::meltt_inspect(output_km5)
+fl  <- list()
+fl2 <- list()
+
+for (i in 1:length(flagged)){
+  fl[[i]] <- flagged[[i]]$`Flagged Event Information`$obs.count
+  fl2[[i]] <- flagged[[i]]$`Flagged Episode Information`$obs.count
+}
+
+#unlist(fl)
+#unlist(fl2)
+
+vars_acled <- c("start","end","date","enddate","event_type","actor1","actor2","latitude","longitude","actor_tax","event_tax","prec_tax")
+vars_ged <- c("date","enddate","type_of_violence","dyad_name","latitude","longitude","actor_tax","event_tax","prec_tax")
+vars_scad <- c("startdate","enddate","etype","actor1","actor2","latitude","longitude","actor_tax","event_tax","prec_tax", "notes")
+
+#View(acled[unlist(fl[c(1:4,6:30,32:42)]),vars_acled])
+#View(ged[unlist(fl2[c(4,6:15,17:25, 28:30, 32:36, 41:42)]),vars_ged])
+#View(ged[unlist(fl[c(5)]),vars_ged])
+#View(acled[unlist(fl2[c(5, 31)]),vars_acled])
+#View(scad[unlist(fl2[c(1:3, 16, 25:27, 37:40)]),vars_scad])
+#View(scad[unlist(fl[c(31)]),vars_scad])
+
+```
+
+
+```{r, include = FALSE}
+
+acled[unlist(fl[1:3]),vars_acled]
+scad[unlist(fl2[1:3]),vars_scad]
+# These are the same events, but they affected different targets (civilians from Ethiopia and foreigners) on different days. Scad talks of three attacks over the span of three days (starting on 12/04/97 until 15/04/97). Because we're interested in the number of events (and not length in days), we keep the ACLED events
+# --> acled prevails so T for flagged 1:3
+
+
+# This is the same event but ged spans two days and acled one only. ACLED has higher precision
+#acled[unlist(fl[4]),vars_acled]
+#ged[unlist(fl2[4]),vars_ged]
+# --> ged prevails so T for flagged 4 but change start date in acled
+
+# This is the same event. In ged it spans one day (1998-06-02) but in acled 3 (1998-06-02 to 1998-06-04)
+#ged[unlist(fl[5]),vars_ged]
+#acled[unlist(fl2[5]),vars_acled]
+# --> acled prevails so T for flagged 5 but change end date in ged
+
+
+# This is the same event but ged spans two days (1998-06-09 to 1998-06-10) and acled one only (1998-06-09)
+#acled[unlist(fl[6]),vars_acled]
+#ged[unlist(fl2[6]),vars_ged]
+# --> ged prevails so T for flagged 6 but change start date in acled
+
+#This the not the same event. In acled spans one day (1998-10-07), while 2 weeks in ged (1998-10-01 to 1998-10-14), plus the actors involved are different (civilians vs government)
+#acled[unlist(fl[7]),vars_acled]
+#ged[unlist(fl2[7]),vars_ged]
+# --> F for flagged 7
+
+# This is the same event but ged spans three days (1999-05-24 to 1999-05-26) and acled one only
+#acled[unlist(fl[8]),vars_acled]
+#ged[unlist(fl2[8]),vars_ged]
+# --> ged prevails so T for flagged 8 but change end date in acled observation
+
+
+# This is partially the same event. In ged it spans three days (2000-05-23 2000-05-25) and acled one only; but acled has event on 24th (diff type of violence) and 25th (same type of violence). Observation fl[10] is NOT same event.
+#acled[unlist(fl[9:11]),vars_acled]
+#ged[unlist(fl2[9:11]),vars_ged]
+# if same event
+# --> ged prevails so T for flagged 9 and 11, F for flagged 10 but change end date in acled observation and remember to drop extra acled observations!
+
+
+# This is the same event. ACLED talks about “land disputes" resulting in the death of 75 people, but only has one day referenced (15/09/2000). GED covers all month of September. Difference also in number of deaths (47 in GED).
+#acled[unlist(fl[12]),vars_acled]
+#ged[unlist(fl2[12]),vars_ged]
+# --> ged prevails so T for flagged 12 but but change start and end dates acled
+
+
+# This is not the same event, different actors are involved (Oromo Liberation Front, OLF vs Ogaden National Liberation Front, ONLF)
+#acled[unlist(fl[13]),vars_acled]
+#ged[unlist(fl2[13]),vars_ged]
+# --> F for flagged 13
+
+#This is the same event but in ACLED it was coded as two separate events (on 2001-04-17 and 2001-04-18) but the actors involved are the same. ACLED ha a further observation on the 19
+#acled[unlist(fl[14:15]),vars_acled]
+#ged[unlist(fl2[14:15]),vars_ged]
+# --> ged prevails so T for flagged 14-15 but change end dates in acled and remove extra observations with dates 2001-04-18 and 2001-04-19
+
+```
+
+
+```{r, include = FALSE}
+
+# This is not the same event, the actors involved are different (opposition party members vs protesters and police force)
+acled[unlist(fl[16]), vars_acled]
+scad[unlist(fl2[16]), vars_scad]
+# --> F for flagged 16
+
+#This is the same event but in Acled it was coded as two separate events. Acled has higher precision
+#acled[unlist(fl[17:18]),vars_acled]
+#ged[unlist(fl2[17:18]),vars_ged]
+# --> acled prevails so T for flagged 17-18, but change end date in acled and drop extra observation [18]
+
+
+# This is the same event but for ged it is 2002-07-18 to 2002-07-19 for acled only on 2002-07-18 but then another  event on 2002-07-19
+#acled[unlist(fl[19:20]),vars_acled]
+#ged[unlist(fl2[19:20]),vars_ged]
+# --> ged prevails so T for flagged 19:20 but but change end dates acled and remember to drop acled observation for 2002-07-19
+
+
+# This is the same event but for ged it is from 1-10 for acled on 1 jan (and 8 jan)
+#acled[unlist(fl[21]),vars_acled]
+#ged[unlist(fl2[21]),vars_ged]
+# --> ged prevails so T for flagged 21 but but change start and end dates acled and remember to drop acled observation for 2003-01-08
+
+# This is the same event but for ged it is from 1-10 for acled on 1 jan (and 8 jan)
+#acled[unlist(fl[22]),vars_acled]
+#ged[unlist(fl2[22]),vars_ged]
+# --> ged prevails so T for flagged 22 but but change start and end dates acled and remember to drop acled observation for 2003-01-08
+
+
+# This is the same event but for ged it is from 1-10 for acled on 1 jan (and 8 jan)
+#acled[unlist(fl[23]),vars_acled]
+#ged[unlist(fl2[23]),vars_ged]
+# --> ged prevails so T for flagged 23 but but change start and end dates acled and remember to drop acled observation for 2003-01-08
+
+#This is the same event but in ged it lasts longer (from 2004-04-01 to 2004-04-10)
+#acled[unlist(fl[24]),vars_acled]
+#ged[unlist(fl2[24]),vars_ged]
+# --> ged prevails so T for flagged 24 but but change start and end dates acled
+
+
+#This is the same event. Coded on slightly different dates (acled and scad).
+acled[unlist(fl[25:26]),vars_acled]
+scad[unlist(fl2[25:26]),vars_scad]
+# --> acled prevails so T for flagged 26 but but change end dates acled
+# ACLED has higher precision, hence it might code other protests (as protests break out) as separate geo-coded events. Because we are interested in the number of events, not days, we keep ACLED
+
+#This is the same event. Coded on slightly different dates (acled and scad).
+acled[unlist(fl[27]),vars_acled]
+scad[unlist(fl2[27]),vars_scad]
+# --> acled prevails so T for flagged 27 but but change end dates acled
+# ACLED has higher precision, hence it might code other protests (as protests break out) as separate geo-coded events. Because we are interested in the number of events, not days, we keep ACLED
+
+
+#This is the same event but for ged it is from 14-16 nov for acled on 15 nov only
+#acled[unlist(fl[28]),vars_acled]
+#ged[unlist(fl2[28]),vars_ged]
+# --> ged prevails so T for flagged 28 but change start and end dates in acled
+
+```
+
+
+```{r, include = FALSE}
+
+# This is the same event but for ged it is from 9-11 feb for acled on 11 feb only
+#acled[unlist(fl[29]),vars_acled]
+#ged[unlist(fl2[29]),vars_ged]
+# --> ged prevails so T for flagged 29 but change start date for acled observation
+
+# This the same event. Acled reports only 7/03 while ged 6-7/03
+#acled[unlist(fl[30]),vars_acled]
+#ged[unlist(fl2[30]),vars_ged]
+# --> ged prevails so T for flagged 30 but change start date for acled observation
+
+# This is the not the same event. The actors involved and the longitude/latitude is different.
+scad[unlist(fl[31]),vars_scad]
+acled[unlist(fl2[31]),vars_acled]
+# --> not the same event so F for flagged 31
+
+# This is the not the same event. The actors involved and the longitude/latitude is different.
+acled[unlist(fl[32]),vars_acled]
+ged[unlist(fl2[32]),vars_ged]
+# --> not the same event so F for flagged 32
+
+# This is the same event but for ged it is from 17-20 jan for acled on 18 jan only
+#acled[unlist(fl[33]),vars_acled]
+#ged[unlist(fl2[33]),vars_ged]
+# --> ged prevails so T for flagged 33 but change start and end date for acled observation
+
+#This is the same event but for ged it is from 12-15 feb for acled on 12 feb only
+# THOUGH we do have two events on 15 feb one is protests and the other battle with armed group
+# it could be that the protest in acled is type 3 violence in ged (so violence against civilians)
+#acled[unlist(fl[34]),vars_acled]
+#ged[unlist(fl2[34]),vars_ged]
+# --> ged prevails so T for flagged 34 but then remember to drop acled observation
+# BUT to change enddate for event from 2016-02-15 to 2016-02-14 because we have the 
+# acled observation recorded as protest on 15 feb
+
+
+# This is the same event but for ged it is from 6-7 aug for acled on 6 aug only
+#acled[unlist(fl[35]),vars_acled]
+#ged[unlist(fl2[35]),vars_ged]
+# --> ged prevails so T for flagged 35 but change end date for acled observation
+
+# This is the same event but for ged it is from 6-7 aug for acled on 6 aug only
+#acled[unlist(fl[36]),vars_acled]
+#ged[unlist(fl2[36]),vars_ged]
+# --> ged prevails so T for flagged 36 but change end date for acled observation
+
+# For scad and acled, we talk about one event that spans 3 days (4-6 oct) in scad
+# and 3 days (3-5 oct) in acled, though in acled the 4th of oct is categorised as 
+# riots and not protest as in scad
+#acled[unlist(fl[37:38]),vars_acled]
+#scad[unlist(fl2[37:38]),vars_scad]
+# --> acled is to keep, as scad notes that "The date of this incident is an estimate; no dates were provided by either source, although both indicated the attacks spanned multiple days.". Because we are interested in the number of events, not days, we give priority to ACLED.
+# --> T for flagged 37:38
+
+#This is the same event, but in scad it spans one extra day (4-Oct-16 to 2016-10-05)
+acled[unlist(fl[39]),vars_acled]
+scad[unlist(fl2[39]),vars_scad]
+# --> Acled is to keep, as scad notes "the number of stonings, as well as the number of participants in this series of attacks is not mentioned. The time period provided is an estimate; AFP does not specify on which days the stonings occurred, though the rest of the article covers events that transpired on these two days"
+# --> T for flagged 39
+
+#This is the same event, but in scad it lasts longer (2017-04-01 to 2017-04-26)
+acled[unlist(fl[40]),vars_acled]
+scad[unlist(fl2[40]),vars_scad]
+# --> Acled is to keep, because it has higher precision and as scad notes "Dates of this event are estimated"
+# --> T for flagged 40
+
+# This is the same event but in ged it spans more days (2017-10-10 2017-10-12)
+acled[unlist(fl[41]),vars_acled]
+ged[unlist(fl2[41]),vars_ged]
+# --> ged prevails so T for flagged 41 but change start and end date for acled observation 2017-10-11
+
+# This is the saame event but in ged it spans more days (2017-10-20 to 2017-10-22)
+acled[unlist(fl[42]),vars_acled]
+ged[unlist(fl2[42]),vars_ged]
+# --> acled prevails, so T for flagged 42, but change end date in acled
+
+```
+
+We see two examples of flagged events which are indeed duplicates, but were not immediately matched by MELTT because the two original datasets, ACLED and GED, coded the events as happening on slightly different dates: 
+
+```{r, echo = FALSE}
+
+for (i in c(4, 6)) {
+  print(acled[unlist(fl[i]),vars_acled])
+  print(ged[unlist(fl2[i]),vars_ged])
+  print("This is the same event but in GED it spans two days while in ACLED only one. We keep the ACLED observation and drop GED, but because we are interested in the number of events (rather than the length of events), we then recode the start and/or end date of the ACLED observation to match GED.")
+}
+
+```
+
+
+While here we see an examples of a flagged instance where the events, again coming from ACLE and GED, turned out not to be duplicates:
+
+```{r, echo = FALSE}
+
+print(acled[unlist(fl[13]),vars_acled])
+print(ged[unlist(fl2[13]),vars_ged])
+print("This is not the same event, as the actors involved are different. ACLED talks of the Military Forces of Ethiopia vs the Oromo Liberation Front (OLF), while GED talks of the Ethiopian government against the Ogaden National Liberation Front (ONLF).")
+
+```
+
+After having assessed which events are unique and which are duplicates, we drop the duplicates to obtain a dataset of uniquely identified events.
+
+```{r, echo = FALSE}
+
+# F is to keep both flagged events
+# T is to remove episode (not event) from flagged events
+# This should mean that the first observation (ACLED in most cases) in the flagged dataset is kept
+retain <- c(T,T,T,T,T,  
+            T,F,T,T,F,  
+            T,T,F,T,T,  
+            F,T,T,T,T,  
+            T,T,T,T,T,  
+            T,T,T,T,T,  
+            F,F,T,T,T,  
+            T,T,T,T,T,  
+            T,T)
+merged <- meltt::meltt_inspect(output_km5, confirmed_matches = retain)
+head(merged)
+
+```
+
+
+```{r, include = FALSE}
+
+# Observations acled to drop
+acledtodrop <- unlist(fl[c(11, 15, 18, 20)])
+merged2 <- merged[!(merged$event %in% acledtodrop & merged$dataset=="acled"),]
+#length(merged$event)-length(acledtodrop);length(merged2$event)
+
+# Drop acled x3 and for protesters
+a1<-which(acled$latitude==8.2091&acled$longitude==34.1179&acled$date=="2003-01-08")#2681
+a2<-which(acled$latitude==8.25&acled$longitude==34.5833&acled$date=="2003-01-08")#2682
+a3<-which(acled$latitude==8.2&acled$longitude==34.2667&acled$date=="2003-01-08")#2683
+#a4<-which(acled$latitude==8.9833&acled$longitude==37.85&acled$date=="2016-08-06"&acled$event_type=="Protests")#351
+#a5<-which(acled$latitude==7.2&acled$longitude==38.6&acled$date=="2016-08-06"&acled$event_type=="Riots")
+#a6<-which(acled$latitude==7.1&acled$longitude==39.2&acled$date=="2016-08-06"&acled$event_type=="Riots")
+acledtodrop2 <- c(a1,a2,a3)
+merged3 <- merged2[!(merged2$event %in% acledtodrop2 & merged2$dataset=="acled"),]
+
+```
+
+# Merging into one dataset
+
+After manually reviewing the flagged events, we merge all data to generate the final dataset, which includes 5465 observations.
+
+```{r, include=FALSE}
+
+# Get full dataset
+# First add event number so easy to merge with merged3
+acled$event <- 1:nrow(acled)
+ged$event <- 1:nrow(ged)
+scad$event <- 1:nrow(scad)
+gtd$event <- 1:nrow(gtd)
+
+# Define. vars to keep for each dataset
+vars_acled<-c("event","date","enddate_acled","latitude","longitude","actor_tax","event_tax","prec_tax","actor2", "fatalities")
+vars_ged<-c("event","date","enddate_ged","latitude","longitude","actor_tax","event_tax","prec_tax",
+            "deaths_a","deaths_b","deaths_civilians","deaths_unknown","side_b")
+vars_scad<-c("event","date","enddate_scad","latitude","longitude","actor_tax","event_tax","prec_tax",
+             "notes_scad","ndeath","actor2")
+vars_gtd<-c("event","date","enddate_gtd","latitude","longitude","actor_tax","event_tax","prec_tax",
+            "notes_gtd","nkill","gname2")
+names(acled)[names(acled) == "enddate"] <- "enddate_acled"
+names(ged)[names(ged) == "enddate"] <- "enddate_ged"
+names(scad)[names(scad) == "enddate"] <- "enddate_scad"
+names(scad)[names(scad) == "notes"] <- "notes_scad"
+names(gtd)[names(gtd) == "enddate"] <- "enddate_gtd"
+names(gtd)[names(gtd) == "summary"] <- "notes_gtd"
+
+# Merge them
+cdf1 <- merge(merged3,acled[vars_acled],all.x = T,
+              by=c("event","date","latitude","longitude","actor_tax","event_tax","prec_tax"))
+cdf2 <- merge(cdf1,ged[vars_ged],all.x = T,
+              by=c("event","date","latitude","longitude","actor_tax","event_tax","prec_tax"))
+cdf3 <- merge(cdf2,scad[vars_scad],all.x = T,
+              by=c("event","date","latitude","longitude","actor_tax","event_tax","prec_tax"))
+cdf4 <- merge(cdf3,gtd[vars_gtd],all.x = T,
+              by=c("event","date","latitude","longitude","actor_tax","event_tax","prec_tax"))
+head(cdf4)
+names(cdf4)
+
+# For notes
+cdf4$notes[cdf4$dataset=="scad"] <- as.character(cdf4$notes_scad[cdf4$dataset=="scad"])
+cdf4$notes[cdf4$dataset=="gtd"] <- as.character(cdf4$notes_gtd[cdf4$dataset=="gtd"])
+
+# For enddate
+cdf4$enddate[cdf4$dataset=="acled"] <- cdf4$enddate_acled[cdf4$dataset=="acled"]
+cdf4$enddate[cdf4$dataset=="ged"] <- cdf4$enddate_ged[cdf4$dataset=="ged"]
+cdf4$enddate[cdf4$dataset=="scad"] <- cdf4$enddate_scad[cdf4$dataset=="scad"]
+cdf4$enddate[cdf4$dataset=="gtd"] <- cdf4$enddate_gtd[cdf4$dataset=="gtd"]
+cdf4$enddate <- as.Date(cdf4$enddate)
+tail(table(cdf4$enddate, useNA = "always"))#there are no NAs
+cdf4[1:50,c("dataset","enddate_acled","enddate_ged","enddate_scad","enddate_gtd","enddate")]
+# For actor2
+cdf4$actor2[cdf4$dataset=="acled"] <- as.character(cdf4$actor2.x[cdf4$dataset=="acled"])
+cdf4$actor2[cdf4$dataset=="ged"] <- as.character(cdf4$side_b[cdf4$dataset=="ged"])
+cdf4$actor2[cdf4$dataset=="scad"] <- as.character(cdf4$actor2.y[cdf4$dataset=="scad"])
+cdf4$actor2[cdf4$dataset=="gtd"] <- as.character(cdf4$gname2[cdf4$dataset=="gtd"])
+tail(table(cdf4$actor2, useNA = "always"))#there are no NAs
+cdf4[1:50,c("dataset","actor2.x","side_b","actor2.y","gname2","actor2")]
+# For deaths: ATTENTION BECAUSE FOR EDITED DATES IN GED AND SCAD WE HAVE TOTAL DEATHS
+# PLUS THERE ARE SOME NEGATIVE NUMBERS (E.G. SCAD -77: unknown but probably large (10 or more))
+cdf4$deaths[cdf4$dataset=="acled"] <- cdf4$fatalities[cdf4$dataset=="acled"]
+cdf4$deaths[cdf4$dataset=="ged"] <- cdf4$deaths_a[cdf4$dataset=="ged"]+cdf4$deaths_b[cdf4$dataset=="ged"]+
+  cdf4$deaths_civilians[cdf4$dataset=="ged"]+cdf4$deaths_unknown[cdf4$dataset=="ged"]
+cdf4$deaths[cdf4$dataset=="scad"] <- cdf4$ndeath[cdf4$dataset=="scad"]
+cdf4$deaths[cdf4$dataset=="gtd"] <- cdf4$nkill[cdf4$dataset=="gtd"]
+summary(cdf4$deaths)#there are 5 NAs for GTD
+cdf4[1:50,c("dataset","fatalities","deaths_a","deaths_b","deaths_civilians","deaths_unknown","ndeath","nkill","deaths")]
+cdf4[is.na(cdf4$deaths),c("dataset","fatalities","deaths_a","deaths_b","deaths_civilians","deaths_unknown","ndeath","nkill","deaths")]
+# Remove variables
+cdf4$notes_scad<-NULL;cdf4$notes_gtd<-NULL
+cdf4$enddate_acled<-NULL;cdf4$enddate_ged<-NULL;cdf4$enddate_scad<-NULL;cdf4$enddate_gtd<-NULL
+cdf4$actor2.x<-NULL;cdf4$side_b<-NULL;cdf4$actor2.y<-NULL;cdf4$gname2<-NULL
+cdf4$fatalities<-NULL;cdf4$deaths_a<-NULL;cdf4$deaths_b<-NULL;cdf4$deaths_civilians<-NULL;cdf4$deaths_unknown<-NULL;cdf4$ndeath<-NULL;cdf4$nkill<-NULL
+# Re-order variables
+cdf <- cdf4[,c("dataset","date","enddate","actor_tax","actor2","event_tax","latitude","longitude","event","deaths", "notes","prec_tax")]
+
+```
+
+
+
+```{r, include = FALSE}
+
+#changing end and start dates for ACLED
+
+d<-unlist(fl[4]) # This is the same event but ged spans two days and acled one only. ACLED has higher precision
+cdf$date[cdf$dataset=="acled"&cdf$event==d] <- "1998-05-30"
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "1998-05-31"
+
+d<-unlist(fl[5]) # This is the same event. In ged it spans one day (1998-06-02) but in acled 3 (1998-06-02 to 1998-06-04)
+cdf$enddate[cdf$dataset=="ged" & cdf$event==d] <- "1998-06-04"
+
+d<-unlist(fl[6]) #This is the same event but ged spans two days (1998-06-09 to 1998-06-10) and acled one only (1998-06-09)
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "1998-06-10"
+
+d<-unlist(fl[8]) # This is the same event but ged spans three days (1999-05-24 to 1999-05-26) and acled one only
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "1999-05-26"
+
+d<-unlist(fl[9]) # This is the same event. In ged it spans three days (2000-05-23 2000-05-25) and acled one only; we change end date to match ged
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2000-05-25"
+
+d<-unlist(fl[12]) # This is the same event. ACLED talks about “land disputes" resulting in the death of 75 people, but only has one day referenced (15/09/2000). GED covers all month of September. We change daates to match
+cdf$date[cdf$dataset=="acled"&cdf$event==d] <- "2000-09-01"
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2000-09-30"
+
+d<-unlist(fl[14]) #This is the same event but in ACLED it was coded as two separate events (on 2001-04-17 and 2001-04-18) but the actors involved are the same. ACLED has a further observation on the 19 to be dropped
+cdf$date[cdf$dataset=="acled"&cdf$event==d] <- "2001-04-17"
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2001-04-20"
+cdf$deaths[cdf$dataset=="acled"&cdf$event==d] <- 39 # adding deaths that wrre recorded for 2001-04-19
+cdf <- cdf[!(cdf$dataset=="acled" & cdf$date=="2001-04-19" & cdf$event ==1545),]
+
+d<-unlist(fl[17])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2002-06-23"
+
+d<-unlist(fl[19])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2002-07-19"
+
+d<-unlist(fl[21])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2003-01-10"
+
+d<-unlist(fl[22])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2003-01-10"
+
+d<-unlist(fl[23])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2003-01-10"
+
+d<-unlist(fl[24])
+cdf$date[cdf$dataset=="acled"&cdf$event==d] <- "2004-04-01"
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2004-04-10"
+
+d<-unlist(fl[26])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2005-11-05"
+
+d<-unlist(fl[27])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2005-11-05"
+
+d<-unlist(fl[28])
+cdf$date[cdf$dataset=="acled"&cdf$event==d] <- "2005-11-14"
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2005-11-16"
+
+d<-unlist(fl[29])
+cdf$date[cdf$dataset=="acled"&cdf$event==d] <- "2007-02-09"
+
+d<-unlist(fl[30])
+cdf$date[cdf$dataset=="acled"&cdf$event==d] <- "2009-03-06"
+
+d<-unlist(fl[33])
+cdf$date[cdf$dataset=="acled"&cdf$event==d] <- "2016-01-17"
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2016-01-20"
+
+d<-unlist(fl[34])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2016-02-15"
+
+d<-unlist(fl[35])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2016-08-07"
+
+d<-unlist(fl[36])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2016-08-07"
+
+d<-unlist(fl[41])
+cdf$date[cdf$dataset=="acled"&cdf$event==d] <- "2017-10-10"
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2017-10-12"
+
+d<-unlist(fl[42])
+cdf$enddate[cdf$dataset=="acled"&cdf$event==d] <- "2017-10-22"
+
+```
+
+```{r, echo=FALSE}
+
+str(cdf)
+
+```
+
+To account for potential further duplicates, we look for instances of events where all variables, except the event number, are identical:
+
+```{r, echo = FALSE}
+
+duplic <- cdf[
+  duplicated(cdf[ , c(
+    "dataset", "date", "enddate", "actor_tax", "actor2",
+    "event_tax", "latitude", "longitude", "deaths", "notes",
+    "prec_tax")]),]
+
+nrow(duplic)
+
+```
+
+We also check that the our previous taxonomies (event, precision, and actor) covers all observations in this merged dataset: 
+
+```{r}
+
+cdf_tax <- cdf %>% 
+  dplyr::left_join(
+    event_tax, 
+    by = c("dataset" = "data.source", "event_tax" = "base.categories")) %>% 
+  dplyr::left_join(
+    prec_tax, 
+    by = c("dataset" = "data.source", "prec_tax" = "base.categories")) %>% 
+  dplyr::left_join(
+    my_actor_tax, 
+    by = c("dataset" = "data.source", "actor_tax" = "base.categories"))
+
+apply(cdf_tax, 2, function(x) any(is.na(x)))
+
+```
+
+# Save final dataset
+
+```{r}
+
+write.csv(cdf, here::here("data", "ethiopia_conflict.csv"))
+saveRDS(cdf, here::here("data", "ethiopia_conflict.rds"))
+haven::write_dta(cdf, here::here("data", "ethiopia_conflict.dta"))
+haven::write_sav(cdf, here::here("data", "ethiopia_conflict.sav"))
+
+```
+
+
+# References
