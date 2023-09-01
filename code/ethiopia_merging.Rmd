@@ -86,6 +86,8 @@ event_tax <- read.csv(paste0(fp_data, "event_tax.csv"))
 
 prec_tax  <- read.csv(paste0(fp_data, "prec_tax.csv"))
 
+actor_tax <- read.csv(paste0(fp_data, "actor_tax.csv"))
+
 ```
 
 ## ACLED
@@ -1698,6 +1700,74 @@ cdf_tax <- cdf %>%
     by = c("dataset" = "data.source", "actor_tax" = "base.categories"))
 
 apply(cdf_tax, 2, function(x) any(is.na(x)))
+
+```
+
+# TO DO
+
+```{r}
+
+# merge event taxonomy dataset
+names(event_tax)[2:3] <- c("dataset", "event_tax")
+head(cdf[-11])
+head(event_tax)
+
+cdf_ev_tax <- merge(cdf, event_tax, 
+                    by = c("event_tax", "dataset"), all.x = TRUE)
+
+table(cdf_ev_tax$Level_1_text, useNA = "always")
+head(cdf_ev_tax)
+
+# merge actor taxonomy dataset
+names(actor_tax)[1:2] <- c("dataset", "actor_tax")
+
+head(cdf_ev_tax[-11])
+head(actor_tax)
+
+cdf_ac_tax <- merge(cdf_ev_tax, actor_tax, 
+                 by = c("actor_tax", "dataset"), all.x = TRUE)
+
+table(cdf_ac_tax$actor_level_1_txt, useNA = "always")
+head(cdf_ac_tax)
+
+# Create var for actors
+# check all actors are categorised
+unique(cdf_ac_tax$actor_tax[is.na(cdf_ac_tax$actor_level_1_txt)]) 
+
+# check it again
+setdiff(unique(cdf$actor_tax), unique(actor_tax$actor_tax)) 
+table(cdf_ac_tax$actor_level_1_txt, useNA = "always")
+
+cdf_ac_tax$actor_c <- "others"
+cdf_ac_tax$actor_c[
+  cdf_ac_tax$actor_level_1_txt == "government"] <- "government"
+cdf_ac_tax$actor_c[
+  cdf_ac_tax$actor_level_1_txt == "violent groups"] <- "violent groups"
+cdf_ac_tax$actor_c <- factor(
+  cdf_ac_tax$actor_c, levels = c(
+    "government","violent groups","others"))
+table(cdf_ac_tax$actor_level_1_txt, 
+      cdf_ac_tax$actor_c, useNA = "always")
+
+# Add rows for month for each event that spanned more than one month
+cdf <- data.table::setDT(cdf_ac_tax)[
+  , list(dataset = dataset, date = date, 
+         enddate = enddate, actor_tax = actor_tax, 
+         actor2 = actor2, event_tax = event_tax, 
+         latitude = latitude, longitude = longitude, 
+         event = event, deaths = deaths, 
+         event_1 = Level_1_text, event_2 = Level_2_text, 
+         event_3 = Level_3_text, event_4 = Level_4_text, 
+         actor_1 = actor_level_1_txt, actor_2 = actor_level_2_txt, 
+         actor_c = actor_c, 
+         notes = notes, prec_tax = prec_tax, 
+         month = seq(date, enddate, by = "month")), 
+  by = 1:nrow(cdf_ac_tax)]
+
+table(cdf$actor_1, cdf$actor_c, useNA = "always")
+
+# Extract month and year from date
+cdf$Month_Yr <- zoo::as.yearmon(cdf$month)
 
 ```
 
