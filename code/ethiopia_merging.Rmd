@@ -54,18 +54,20 @@ This document merges information on conflict events in Ethiopia stemming from fo
 The following file is organized as follows:
 
 1. First, the separate conflict datasets are imported
-2. Then, actor, event, and precision taxonomies are developed following @Donnay2019
-3. Using the actor, event, and precision taxonomies the separate datasets are integrated to produce one coherent dataset using the MELTT algorithm (``meltt`` package)
-4. All events flagged as potential duplicates by the ``meltt`` package are reviewed and manually coded as unique events or duplicates
-5. Finally, a unified dataset is produced.
+1. Then, actor, event, and precision taxonomies are developed following @Donnay2019
+1. Using the actor, event, and precision taxonomies the separate datasets are integrated to produce one coherent dataset using the MELTT algorithm (``meltt`` package)
+1. All events flagged as potential duplicates by the ``meltt`` package are reviewed and manually coded as unique events or duplicates
+1. Finally, a unified dataset is produced.
 
 To reproduce the final dataset, one needs the following files:
 
-1. 
-2.
-3.
-4. 
-5.
+1. event_tax.csv
+1. prec_tax.csv
+1. actor_tax.csv
+1. 1997-01-01-2022-01-31-Ethiopia.csv"
+1. globalterrorismdb_0221dist.csv
+1. ged201.RData
+1. SCAD2018Africa_Final.csv
 
 The code used to reproduce the outputs can be found in the corresponding .Rmd file. 
 
@@ -611,48 +613,137 @@ head(acled_actor_tax)
 # Need to create variable actor_level_1_txt starting from base.categories
 # government, violent groups, civilian groups, civilians, movement groups
 # there is not civilian groups here
-acled_actor_tax$actor_level_1_txt[grepl("Government",acled_actor_tax$base.categories)] <- "government"
-acled_actor_tax$actor_level_1_txt[grepl("Military",acled_actor_tax$base.categories)] <- "government"
-acled_actor_tax$actor_level_1_txt[grepl("Police",acled_actor_tax$base.categories)] <- "government"
-acled_actor_tax$actor_level_1_txt[grepl("Militia",acled_actor_tax$base.categories)] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[grepl("Rioters",acled_actor_tax$base.categories)] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[grepl("Armed Group",acled_actor_tax$base.categories)] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[grepl("Civilians",acled_actor_tax$base.categories)] <- "civilians"
-acled_actor_tax$actor_level_1_txt[grepl("Protesters",acled_actor_tax$base.categories)] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[grepl("Party",acled_actor_tax$base.categories)] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[grepl("Movement",acled_actor_tax$base.categories)] <- "movement groups"
+acled_actor_tax$actor_level_1_txt[
+  grepl("Government", acled_actor_tax$base.categories)] <- "government"
+
+acled_actor_tax$actor_level_1_txt[
+  grepl("Military", acled_actor_tax$base.categories)] <- "government"
+
+acled_actor_tax$actor_level_1_txt[
+  grepl("Police", acled_actor_tax$base.categories)] <- "government"
+
+acled_actor_tax$actor_level_1_txt[
+  grepl("Militia", acled_actor_tax$base.categories)] <- "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  grepl("Rioters", acled_actor_tax$base.categories)] <- "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  grepl("Armed Group", acled_actor_tax$base.categories)] <- "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  grepl("Civilians", acled_actor_tax$base.categories)] <- "civilians"
+
+acled_actor_tax$actor_level_1_txt[
+  grepl("Protesters", acled_actor_tax$base.categories)] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  grepl("Party", acled_actor_tax$base.categories)] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  grepl("Movement", acled_actor_tax$base.categories)] <- "movement groups"
 
 # A few have not been categorised, so do it manually
-acled_actor_tax$base.categories[is.na(acled_actor_tax$actor_level_1_txt)]
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="AIAI: Al-Itihad Al-Islamia"] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="Al-Shabiba Al-Islamiyah"] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="Al Shabaab"] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="Amhara Tegadlo"] <- "movement groups"
+acled_actor_tax$base.categories[
+  is.na(acled_actor_tax$actor_level_1_txt)]
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == "AIAI: Al-Itihad Al-Islamia"] <- 
+  "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == "Al-Shabiba Al-Islamiyah"] <- 
+  "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == "Al Shabaab"] <- 
+  "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == "Amhara Tegadlo"] <- 
+  "movement groups"
+
 # These are more difficult to categorise
-acled_actor_tax$base.categories[is.na(acled_actor_tax$actor_level_1_txt)]
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="ARDUF: Afar Revolutionary Democratic Unity Front"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EDU: Front of the Ethiopian Democratic Union Forces"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EPPF: Ethiopian Peoples Patriotic Front"] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EPRDF: Ethiopian Peoples Revolutionary Democratic Front"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EPRDF: Ethiopian People's Revolutionary Democratic Front"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="EUFF: Ethiopian Unity and Freedom Force"] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="MEDREK: Ethiopian Federal Democratic Unity Forum"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="OLF: Oromo Liberation Front"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="ONLF: Ogaden National Liberation Front"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="OPDO: Oromo Peoples Democratic Organization"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="RRA: Rahanweyn Resistance Army"] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="RSADO: Red Sea Afar Democratic Organisation"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="SLF: Sidama Liberation Front"] <- "violent groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="TPLF: Tigray Peoples Liberation Front"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="TPLF: Tigray People's Liberation Front"] <- "movement groups"
-acled_actor_tax$actor_level_1_txt[acled_actor_tax$base.categories=="UWSLF: United Western Somali Liberation Front"] <- "violent groups"
-acled_actor_tax$base.categories[is.na(acled_actor_tax$actor_level_1_txt)]
+acled_actor_tax$base.categories[
+  is.na(acled_actor_tax$actor_level_1_txt)]
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "ARDUF: Afar Revolutionary Democratic Unity Front"] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "EDU: Front of the Ethiopian Democratic Union Forces"] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "EPPF: Ethiopian Peoples Patriotic Front"] <- "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "EPRDF: Ethiopian Peoples Revolutionary Democratic Front"] <- 
+  "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "EPRDF: Ethiopian People's Revolutionary Democratic Front"] <- 
+  "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "EUFF: Ethiopian Unity and Freedom Force"] <- "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "MEDREK: Ethiopian Federal Democratic Unity Forum"] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "OLF: Oromo Liberation Front"] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "ONLF: Ogaden National Liberation Front"] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "OPDO: Oromo Peoples Democratic Organization"] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "RRA: Rahanweyn Resistance Army"] <- "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "RSADO: Red Sea Afar Democratic Organisation"] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "SLF: Sidama Liberation Front"] <- "violent groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "TPLF: Tigray Peoples Liberation Front"] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "TPLF: Tigray People's Liberation Front"] <- "movement groups"
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    "UWSLF: United Western Somali Liberation Front"] <- "violent groups"
+
+acled_actor_tax$base.categories[
+  is.na(acled_actor_tax$actor_level_1_txt)]
 
 # Need to create variable actor_level_2_txt starting from actor_level_1_txt
-# government and violent groups are violent groups, the others are nonviolent groups
+# government and violent groups are violent groups, the others are nonviolent 
+# groups
 acled_actor_tax$actor_level_2_txt <- "nonviolent groups"
-acled_actor_tax$actor_level_2_txt[acled_actor_tax$actor_level_1_txt=="government"|
-                                 acled_actor_tax$actor_level_1_txt=="violent groups"] <- "violent groups"
+
+acled_actor_tax$actor_level_2_txt[
+  acled_actor_tax$actor_level_1_txt == "government" |
+    acled_actor_tax$actor_level_1_txt == "violent groups"] <- "violent groups"
 ```
 
 
@@ -673,8 +764,8 @@ apply(acled_actor, 2, function(x) any(is.na(x)))
 
 ####GED####
 # Create dataframe with data.source and base.categories
-base.categories<-unique(ged$side_a)
-data.source<-rep("ged",length(base.categories))
+base.categories <- unique(ged$side_a)
+data.source <- rep("ged", length(base.categories))
 ged_actor_tax <- as.data.frame(cbind(data.source,base.categories))
 
 head(ged_actor_tax)
@@ -682,7 +773,9 @@ head(ged_actor_tax)
 # Need to create variable actor_level_1_txt starting from base.categories
 # all non-state are violent groups, otherwise government
 ged_actor_tax$actor_level_1_txt <- "violent groups"
-ged_actor_tax$actor_level_1_txt[grepl("Government",ged_actor_tax$base.categories)] <- "government"
+
+ged_actor_tax$actor_level_1_txt[
+  grepl("Government", ged_actor_tax$base.categories)] <- "government"
 
 # Need to create variable actor_level_2_txt starting from actor_level_1_txt
 # all are violent groups Donnay et al. Appendix p.22
@@ -702,47 +795,82 @@ apply(ged_actor, 2, function(x) any(is.na(x)))
 
 ####SCAD####
 # Create dataframe with data.source and base.categories
-base.categories<-unique(as.character(scad$actor1))
-data.source<-rep("scad",length(base.categories))
+base.categories <- unique(as.character(scad$actor1))
+data.source <- rep("scad", length(base.categories))
 scad_actor_tax <- as.data.frame(cbind(data.source,base.categories))
 
 # Need to create variable actor_level_1_txt starting from base.categories
 # government, violent groups, civilian groups, civilians, movement groups, religious groups
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="students"] <- "civilians"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Ethiopians"] <- "civilians"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="taxi drivers"] <- "civilian groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="demonstrators"] <- "movement groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Demonstrators angry over the deaths Irreecha festival attendees"] <- "movement groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Armed men"] <- "violent groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="voters"] <- "civilians"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="journalists"] <- "civilian groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="women"] <- "civilians"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Bandits"] <- "violent groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="attackers"] <- "violent groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="OLF"] <- "movement groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="ONLF"] <- "movement groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="al-Itahad al-Islami"] <- "violent groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Al-Itihad Al-Islamiya"] <- "violent groups"
-scad_actor_tax$actor_level_1_txt[grepl("opposition",scad_actor_tax$base.categories)] <- "movement groups"
-scad_actor_tax$actor_level_1_txt[grepl("tribe",tolower(scad_actor_tax$base.categories))] <- "civilian groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Oromo ethnic group"] <- "civilian groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Ethiopian People's Revolutionary Democratic Front"] <- "movement groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="pro-government supporters"] <- "movement groups"
-scad_actor_tax$actor_level_1_txt[grepl("protesters",tolower(scad_actor_tax$base.categories))] <- "movement groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Gunmen"] <- "violent groups"
-scad_actor_tax$actor_level_1_txt[grepl("clan",scad_actor_tax$base.categories)] <- "violent groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Islamic youth"] <- "religious groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="market traders"] <- "civilian groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Christians"] <- "religious groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Muslims"] <- "religious groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="truckers"] <- "civilian groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Shopkeepers"] <- "civilian groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Soldiers"] <- "government"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Security forces"] <- "government"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Suspected security forces"] <- "government"
-scad_actor_tax$actor_level_1_txt[grepl("Police",scad_actor_tax$base.categories)] <- "government"
-scad_actor_tax$actor_level_1_txt[grepl("gunmen",scad_actor_tax$base.categories)] <- "violent groups"
-scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Anuak militants"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="students"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Ethiopians"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="taxi drivers"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="demonstrators"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Demonstrators angry over the deaths Irreecha festival attendees"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Armed men"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="voters"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="journalists"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="women"] <- "civilians"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Bandits"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="attackers"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="OLF"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="ONLF"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="al-Itahad al-Islami"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Al-Itihad Al-Islamiya"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[
+  grepl("opposition",scad_actor_tax$base.categories)] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[
+  grepl("tribe",tolower(scad_actor_tax$base.categories))] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Oromo ethnic group"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Ethiopian People's Revolutionary Democratic Front"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="pro-government supporters"] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[
+  grepl("protesters",tolower(scad_actor_tax$base.categories))] <- "movement groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Gunmen"] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[
+  grepl("clan",scad_actor_tax$base.categories)] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Islamic youth"] <- "religious groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="market traders"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Christians"] <- "religious groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Muslims"] <- "religious groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="truckers"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Shopkeepers"] <- "civilian groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Soldiers"] <- "government"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Security forces"] <- "government"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Suspected security forces"] <- "government"
+scad_actor_tax$actor_level_1_txt[
+  grepl("Police",scad_actor_tax$base.categories)] <- "government"
+scad_actor_tax$actor_level_1_txt[
+  grepl("gunmen",scad_actor_tax$base.categories)] <- "violent groups"
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories=="Anuak militants"] <- "violent groups"
 scad_actor_tax$actor_level_1_txt[grepl("bombers",scad_actor_tax$base.categories)] <- "violent groups"
 scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Attackers"] <- "violent groups"
 scad_actor_tax$actor_level_1_txt[scad_actor_tax$base.categories=="Rebels"] <- "violent groups"
@@ -1719,7 +1847,7 @@ table(cdf_ev_tax$Level_1_text, useNA = "always")
 head(cdf_ev_tax)
 
 # merge actor taxonomy dataset
-names(actor_tax)[1:2] <- c("dataset", "actor_tax")
+names(actor_tax)[2:3] <- c("dataset", "actor_tax")
 
 head(cdf_ev_tax[-11])
 head(actor_tax)
