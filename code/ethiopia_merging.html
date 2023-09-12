@@ -377,7 +377,13 @@ display: none;
 </ul></li>
 <li><a href="#developing-taxonomies" id="toc-developing-taxonomies"><span class="toc-section-number">3</span> Developing taxonomies</a>
 <ul>
-<li><a href="#actor-taxonomy" id="toc-actor-taxonomy"><span class="toc-section-number">3.1</span> Actor taxonomy</a></li>
+<li><a href="#actor-taxonomy" id="toc-actor-taxonomy"><span class="toc-section-number">3.1</span> Actor taxonomy</a>
+<ul>
+<li><a href="#acled-1" id="toc-acled-1"><span class="toc-section-number">3.1.1</span> ACLED</a></li>
+<li><a href="#ged-1" id="toc-ged-1"><span class="toc-section-number">3.1.2</span> GED</a></li>
+<li><a href="#scad-1" id="toc-scad-1"><span class="toc-section-number">3.1.3</span> SCAD</a></li>
+<li><a href="#gtd-1" id="toc-gtd-1"><span class="toc-section-number">3.1.4</span> GTD</a></li>
+</ul></li>
 <li><a href="#event-taxonomy" id="toc-event-taxonomy"><span class="toc-section-number">3.2</span> Event taxonomy</a></li>
 <li><a href="#precision-taxonomy" id="toc-precision-taxonomy"><span class="toc-section-number">3.3</span> Precision taxonomy</a></li>
 </ul></li>
@@ -387,7 +393,8 @@ display: none;
 </ul></li>
 <li><a href="#inspecting-flagged-events" id="toc-inspecting-flagged-events"><span class="toc-section-number">5</span> Inspecting flagged events</a></li>
 <li><a href="#merging-into-one-dataset" id="toc-merging-into-one-dataset"><span class="toc-section-number">6</span> Merging into one dataset</a></li>
-<li><a href="#save-final-dataset" id="toc-save-final-dataset"><span class="toc-section-number">7</span> Save final dataset</a></li>
+<li><a href="#merging-taxonomy-datasets" id="toc-merging-taxonomy-datasets"><span class="toc-section-number">7</span> Merging Taxonomy Datasets</a></li>
+<li><a href="#save-final-dataset" id="toc-save-final-dataset"><span class="toc-section-number">8</span> Save final dataset</a></li>
 <li><a href="#references" id="toc-references">References</a></li>
 </ul>
 </div>
@@ -405,11 +412,13 @@ display: none;
 </ol>
 <p>To reproduce the final dataset, one needs the following files:</p>
 <ol style="list-style-type: decimal">
-<li></li>
-<li></li>
-<li></li>
-<li></li>
-<li></li>
+<li>event_tax.csv</li>
+<li>prec_tax.csv</li>
+<li>actor_tax.csv</li>
+<li>1997-01-01-2022-01-31-Ethiopia.csv”</li>
+<li>globalterrorismdb_0221dist.csv</li>
+<li>ged201.RData</li>
+<li>SCAD2018Africa_Final.csv</li>
 </ol>
 <p>The code used to reproduce the outputs can be found in the corresponding .Rmd file.</p>
 </div>
@@ -417,7 +426,9 @@ display: none;
 <h1><span class="header-section-number">2</span> Importing datasets</h1>
 <pre class="r"><code>event_tax &lt;- read.csv(paste0(fp_data, &quot;event_tax.csv&quot;))
 
-prec_tax  &lt;- read.csv(paste0(fp_data, &quot;prec_tax.csv&quot;))</code></pre>
+prec_tax  &lt;- read.csv(paste0(fp_data, &quot;prec_tax.csv&quot;))
+
+actor_tax &lt;- read.csv(paste0(fp_data, &quot;actor_tax.csv&quot;))</code></pre>
 <div id="acled" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span> ACLED</h2>
 <p>The ACLED dataset registers a total of 4102 observations over the period 1997-2017.</p>
@@ -463,7 +474,19 @@ rm(duplic)</code></pre>
 <h1><span class="header-section-number">3</span> Developing taxonomies</h1>
 <div id="actor-taxonomy" class="section level2" number="3.1">
 <h2><span class="header-section-number">3.1</span> Actor taxonomy</h2>
-<p>We develop the actor taxonomies separately for each conflict dataset.</p>
+<p>We develop the actor taxonomies separately for each conflict dataset. The initial recodng process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span> to standardise actors across datasets. This can be found in the file <code>Ethiopia_merging_notes_suppinfo.doc</code>.</p>
+<div id="acled-1" class="section level3" number="3.1.1">
+<h3><span class="header-section-number">3.1.1</span> ACLED</h3>
+</div>
+<div id="ged-1" class="section level3" number="3.1.2">
+<h3><span class="header-section-number">3.1.2</span> GED</h3>
+</div>
+<div id="scad-1" class="section level3" number="3.1.3">
+<h3><span class="header-section-number">3.1.3</span> SCAD</h3>
+</div>
+<div id="gtd-1" class="section level3" number="3.1.4">
+<h3><span class="header-section-number">3.1.4</span> GTD</h3>
+</div>
 </div>
 <div id="event-taxonomy" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Event taxonomy</h2>
@@ -478,7 +501,8 @@ rm(duplic)</code></pre>
 <h1><span class="header-section-number">4</span> Integrating with <code>meltt</code></h1>
 <p>After having developed the taxonomies, we need to define a temporal and spatial window that the MELTT algorithm will considers when looking for potential duplicate events.</p>
 <p>Again, we follow <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span> and set our temporal fuzziness equal to one day and our spatial fuzziness to 3 km.</p>
-<pre class="r"><code>rm(acled_actor, acled_actor_tax, acled_event, ged_actor, ged_actor_tax,
+<pre class="r"><code># remove intermediary files
+rm(acled_actor, acled_actor_tax, acled_event, ged_actor, ged_actor_tax,
    ged_event, gtd_actor, gtd_actor_tax, gtd_event, scad_actor, 
    scad_actor_tax, scad_actor_tax_old, scad_event, base.categories,
    data.source)</code></pre>
@@ -700,14 +724,18 @@ rm(duplic)</code></pre>
 <pre class="r"><code>nrow(deduplicated_km5) #spatio-temporal fuzziness of 1 day, 5 km</code></pre>
 <pre><code>## [1] 5501</code></pre>
 <p>We now look at how many of the observations in the <code>deduplicated_km1</code> dataframe are contained in the <code>deduplicated_km5</code>. In other words, we look for all the events which MELTT classified as certain duplicates and dropped when increasing the spatial fuzziness from 1 km to 5 km:</p>
-<pre class="r"><code>new_duplicates &lt;- dplyr::anti_join(deduplicated_km1, deduplicated_km5) # this dataframe includes all events that were classified as certain duplicates (i.e., matched events) when increasing the fuzziness from 1 day, 1km to 1 day, 5 km</code></pre>
+<pre class="r"><code>new_duplicates &lt;- dplyr::anti_join(deduplicated_km1, deduplicated_km5) </code></pre>
 <pre><code>## Joining with `by = join_by(dataset, event, date, enddate, latitude, longitude,
 ## actor_tax_level_1, actor_tax_level_2, event_tax_level_1, event_tax_level_2,
 ## event_tax_level_3, event_tax_level_4, prec_tax_level_1, prec_tax_level_2,
 ## prec_tax_level_3, prec_tax_level_4, episodal_match)`</code></pre>
-<pre class="r"><code>nrow(new_duplicates)</code></pre>
+<pre class="r"><code># this dataframe includes all events that were classified as certain duplicates 
+# (i.e., matched events) when increasing the fuzziness from 1 day, 1km to 1 day, 
+# 5 km
+
+nrow(new_duplicates)</code></pre>
 <pre><code>## [1] 20</code></pre>
-<p>We see that increasing the fuzziness changes the number of certain duplicates. To check how MELTT is performing and to select an appropriate fuzziness, we look more into the new certain duplicates coming from the 5km specification, and manually check that they are indeed duplictaes.</p>
+<p>We see that increasing the fuzziness changes the number of certain duplicates. To check how MELTT is performing and to select an appropriate fuzziness, we look more into the new certain duplicates coming from the 5km specification, and manually check that they are indeed duplicates.</p>
 <p>First, we look at the list in <code>new_duplicates</code> and select the following event as an example:</p>
 <pre><code>##   eventid id ccode countryname startdate    enddate duration stday stmo styr
 ## 1 5300028 28   530    Ethiopia 11-Feb-97 1997-02-11        1    11    2 1997
@@ -959,8 +987,314 @@ apply(cdf_tax, 2, function(x) any(is.na(x)))</code></pre>
 ##           Level_3           Level_4 actor_level_1_txt actor_level_2_txt 
 ##             FALSE             FALSE             FALSE             FALSE</code></pre>
 </div>
-<div id="save-final-dataset" class="section level1" number="7">
-<h1><span class="header-section-number">7</span> Save final dataset</h1>
+<div id="merging-taxonomy-datasets" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Merging Taxonomy Datasets</h1>
+<pre class="r"><code># merge event taxonomy dataset
+names(event_tax)[2:3] &lt;- c(&quot;dataset&quot;, &quot;event_tax&quot;)
+head(cdf[-11])</code></pre>
+<pre><code>##   dataset       date    enddate                          actor_tax
+## 1     gtd 1997-02-10 1997-02-10                            Unknown
+## 2     ged 1999-01-01 1999-12-31                               AIAI
+## 3   acled 2014-07-30 2014-07-30 Majangir Ethnic Militia (Ethiopia)
+## 4    scad 1997-03-21 1997-03-21                           students
+## 5     gtd 1997-04-12 1997-04-12                            Unknown
+## 6     ged 1999-08-08 1999-08-10                               AIAI
+##                             actor2                     event_tax latitude
+## 1                                                              3 9.291957
+## 2                             AIAI                             1 7.000000
+## 3 Amhara Ethnic Militia (Ethiopia) Battle-No change of territory 8.024400
+## 4                                                              2 8.062010
+## 5                                                              3 8.977146
+## 6                             AIAI                             1 6.740000
+##   longitude event deaths prec_tax
+## 1  42.17485     1      2        1
+## 2  44.00000     1     25        4
+## 3  33.08620     1     17        1
+## 4  39.30770     2      0      -99
+## 5  38.77323     2      1        1
+## 6  44.27806     2      0        3</code></pre>
+<pre class="r"><code>head(event_tax)</code></pre>
+<pre><code>##   X dataset                                  event_tax
+## 1 1   acled          Non-violent transfer of territory
+## 2 2   acled           Headquarters or base established
+## 3 3   acled                                   Protests
+## 4 4   acled   Non-violent activity by a conflict actor
+## 5 5   acled                                      Riots
+## 6 6   acled Battle-Non-state actor overtakes territory
+##                    Level_1_text          Level_2_text      Level_3_text
+## 1           Territorial Dispute Nonviolent Possession Nonviolent Action
+## 2           Territorial Dispute Nonviolent Possession Nonviolent Action
+## 3         Protest/Demonstration   Nonviolent Displays Nonviolent Action
+## 4         Protest/Demonstration   Nonviolent Displays Nonviolent Action
+## 5 Violent Protest/Demonstration      Violent Displays    Violent Action
+## 6           Territorial Dispute    Violent Possession    Violent Attack
+##       Level_4_text
+## 1 Nonviolent Event
+## 2 Nonviolent Event
+## 3 Nonviolent Event
+## 4 Nonviolent Event
+## 5    Violent Event
+## 6    Violent Event</code></pre>
+<pre class="r"><code>cdf_ev_tax &lt;- merge(cdf, event_tax, 
+                    by = c(&quot;event_tax&quot;, &quot;dataset&quot;), all.x = TRUE)
+
+table(cdf_ev_tax$Level_1_text, useNA = &quot;always&quot;)</code></pre>
+<pre><code>## 
+##                      Atrocity                      Coercion 
+##                           811                            14 
+##       Opposition-led Violence         Protest/Demonstration 
+##                           221                          1507 
+##            State-led Violence             Strategic Assault 
+##                          1050                            22 
+##         Strategic Destruction           Territorial Dispute 
+##                           162                          1433 
+## Violent Protest/Demonstration        Within-Regime Violence 
+##                           225                            20 
+##                          &lt;NA&gt; 
+##                             0</code></pre>
+<pre class="r"><code>head(cdf_ev_tax)</code></pre>
+<pre><code>##   event_tax dataset       date    enddate           actor_tax actor2 latitude
+## 1        -9    scad 1998-01-01 2012-12-31                 OLF        7.546040
+## 2        -9    scad 1999-01-01 1999-12-31 al-Itahad al-Islami        8.019040
+## 3        -9    scad 2004-01-01 2012-12-31                ONLF        8.019040
+## 4        -9    scad 1999-01-01 2002-12-31                ONLF        8.019040
+## 5         1     ged 1998-04-05 1998-06-05                ONLF   ONLF 8.220556
+## 6         1     ged 2010-01-15 2010-01-15                ONLF   ONLF 8.166667
+##   longitude event deaths                 notes prec_tax  X       Level_1_text
+## 1  40.63470     4    -77 UPPSALA CONFLICT #219        6 34 State-led Violence
+## 2  44.03880     9    -77 UPPSALA CONFLICT #211        6 34 State-led Violence
+## 3  44.03880    31    -77 UPPSALA CONFLICT #133        6 34 State-led Violence
+## 4  44.03880     8    -77 UPPSALA CONFLICT #133        6 34 State-led Violence
+## 5  43.55722     8      1                  &lt;NA&gt;        2 12 State-led Violence
+## 6  43.50000   464      0                  &lt;NA&gt;        2 12 State-led Violence
+##     Level_2_text   Level_3_text  Level_4_text
+## 1 Violent Attack Violent Attack Violent Event
+## 2 Violent Attack Violent Attack Violent Event
+## 3 Violent Attack Violent Attack Violent Event
+## 4 Violent Attack Violent Attack Violent Event
+## 5 Violent Attack Violent Attack Violent Event
+## 6 Violent Attack Violent Attack Violent Event</code></pre>
+<pre class="r"><code># merge actor taxonomy dataset
+names(actor_tax)[2:3] &lt;- c(&quot;dataset&quot;, &quot;actor_tax&quot;)
+
+head(cdf_ev_tax[-11])</code></pre>
+<pre><code>##   event_tax dataset       date    enddate           actor_tax actor2 latitude
+## 1        -9    scad 1998-01-01 2012-12-31                 OLF        7.546040
+## 2        -9    scad 1999-01-01 1999-12-31 al-Itahad al-Islami        8.019040
+## 3        -9    scad 2004-01-01 2012-12-31                ONLF        8.019040
+## 4        -9    scad 1999-01-01 2002-12-31                ONLF        8.019040
+## 5         1     ged 1998-04-05 1998-06-05                ONLF   ONLF 8.220556
+## 6         1     ged 2010-01-15 2010-01-15                ONLF   ONLF 8.166667
+##   longitude event deaths prec_tax  X       Level_1_text   Level_2_text
+## 1  40.63470     4    -77        6 34 State-led Violence Violent Attack
+## 2  44.03880     9    -77        6 34 State-led Violence Violent Attack
+## 3  44.03880    31    -77        6 34 State-led Violence Violent Attack
+## 4  44.03880     8    -77        6 34 State-led Violence Violent Attack
+## 5  43.55722     8      1        2 12 State-led Violence Violent Attack
+## 6  43.50000   464      0        2 12 State-led Violence Violent Attack
+##     Level_3_text  Level_4_text
+## 1 Violent Attack Violent Event
+## 2 Violent Attack Violent Event
+## 3 Violent Attack Violent Event
+## 4 Violent Attack Violent Event
+## 5 Violent Attack Violent Event
+## 6 Violent Attack Violent Event</code></pre>
+<pre class="r"><code>head(actor_tax)</code></pre>
+<pre><code>##   X dataset                                                   actor_tax
+## 1 1   acled                        Ablek Ad&#39;ali Clan Militia (Ethiopia)
+## 2 2   acled                      ADFM: Amhara Democratic Force Movement
+## 3 3   acled                              Afar Ethnic Militia (Ethiopia)
+## 4 4   acled AGUDM: Patriotic Ginbot 7 for Unity and Democratic Movement
+## 5 5   acled                                  AIAI: Al-Itihad Al-Islamia
+## 6 6   acled                                     Al-Shabiba Al-Islamiyah
+##   actor_level_1_txt actor_level_2_txt
+## 1    violent groups    violent groups
+## 2   movement groups nonviolent groups
+## 3    violent groups    violent groups
+## 4   movement groups nonviolent groups
+## 5    violent groups    violent groups
+## 6    violent groups    violent groups</code></pre>
+<pre class="r"><code>cdf_ac_tax &lt;- merge(cdf_ev_tax, actor_tax, 
+                 by = c(&quot;actor_tax&quot;, &quot;dataset&quot;), all.x = TRUE)
+
+table(cdf_ac_tax$actor_level_1_txt, useNA = &quot;always&quot;)</code></pre>
+<pre><code>## 
+##  civilian groups        civilians       government  movement groups 
+##               16               27             1620             1697 
+## religious groups   violent groups             &lt;NA&gt; 
+##                7             1880              218</code></pre>
+<pre class="r"><code>head(cdf_ac_tax)</code></pre>
+<pre><code>##                                actor_tax dataset
+## 1   Ablek Ad&#39;ali Clan Militia (Ethiopia)   acled
+## 2   Ablek Ad&#39;ali Clan Militia (Ethiopia)   acled
+## 3   Ablek Ad&#39;ali Clan Militia (Ethiopia)   acled
+## 4   Ablek Ad&#39;ali Clan Militia (Ethiopia)   acled
+## 5 ADFM: Amhara Democratic Force Movement   acled
+## 6                                   Afar     ged
+##                                  event_tax       date    enddate
+## 1            Battle-No change of territory 2017-05-04 2017-05-04
+## 2            Battle-No change of territory 2017-05-03 2017-05-03
+## 3            Battle-No change of territory 2017-05-04 2017-05-04
+## 4            Battle-No change of territory 2016-05-01 2016-05-01
+## 5 Non-violent activity by a conflict actor 2010-04-15 2010-04-15
+## 6                                        2 2012-06-14 2012-06-14
+##                                    actor2 latitude longitude event deaths notes
+## 1 Military Forces of Ethiopia (1991-2018) 11.79400  41.00600  2475      2  &lt;NA&gt;
+## 2     Sidiha Bura Clan Militia (Ethiopia) 11.79400  41.00600  2478     12  &lt;NA&gt;
+## 3     Sidiha Bura Clan Militia (Ethiopia) 11.79400  41.00600  2477     11  &lt;NA&gt;
+## 4     Sidiha Bura Clan Militia (Ethiopia) 11.79400  41.00600  2476     50  &lt;NA&gt;
+## 5                                         10.74910  38.76050  1617      0  &lt;NA&gt;
+## 6                         Issa clan (Dir) 10.90745  40.69875  1438      3  &lt;NA&gt;
+##   prec_tax X.x            Level_1_text              Level_2_text
+## 1        3   8     Territorial Dispute            Violent Attack
+## 2        3   8     Territorial Dispute            Violent Attack
+## 3        3   8     Territorial Dispute            Violent Attack
+## 4        3   8     Territorial Dispute            Violent Attack
+## 5        3   4   Protest/Demonstration       Nonviolent Displays
+## 6        5  13 Opposition-led Violence Violent Attack (No State)
+##        Level_3_text     Level_4_text X.y actor_level_1_txt actor_level_2_txt
+## 1    Violent Attack    Violent Event   1    violent groups    violent groups
+## 2    Violent Attack    Violent Event   1    violent groups    violent groups
+## 3    Violent Attack    Violent Event   1    violent groups    violent groups
+## 4    Violent Attack    Violent Event   1    violent groups    violent groups
+## 5 Nonviolent Action Nonviolent Event   2   movement groups nonviolent groups
+## 6    Violent Attack    Violent Event  82    violent groups    violent groups</code></pre>
+<pre class="r"><code># Create var for actors
+# check all actors are categorised
+unique(cdf_ac_tax$actor_tax[is.na(cdf_ac_tax$actor_level_1_txt)]) </code></pre>
+<pre><code>##  [1] &quot;Amaro Ethnic Militia (Ethiopia)&quot;                                                  
+##  [2] &quot;APP: Afar People&#39;s Party&quot;                                                         
+##  [3] &quot;Argobba Ethnic Militia (Ethiopia)&quot;                                                
+##  [4] &quot;Ari&quot;                                                                              
+##  [5] &quot;Benishangul Gumuz People&#39;s Liberation Movement&quot;                                   
+##  [6] &quot;Borana, Guji&quot;                                                                     
+##  [7] &quot;Burji Ethnic Militia (Ethiopia)&quot;                                                  
+##  [8] &quot;Dassanetch&quot;                                                                       
+##  [9] &quot;Degodia&quot;                                                                          
+## [10] &quot;EPRDF: Ethiopian People&#39;s Revolutionary Democratic Front&quot;                         
+## [11] &quot;Ethiopian government&quot;                                                             
+## [12] &quot;Ethnic Oromos&quot;                                                                    
+## [13] &quot;Ethnic Somalis&quot;                                                                   
+## [14] &quot;Gabra&quot;                                                                            
+## [15] &quot;Geri&quot;                                                                             
+## [16] &quot;Government of Ethiopia (1991-2018)&quot;                                               
+## [17] &quot;Government of Kenya&quot;                                                              
+## [18] &quot;Habro Communal Militia (Ethiopia)&quot;                                                
+## [19] &quot;Mutiny of Military Forces of Ethiopia (1991-2018)&quot;                                
+## [20] &quot;Nyangatom&quot;                                                                        
+## [21] &quot;Oromo Protesters&quot;                                                                 
+## [22] &quot;Oromo rioters&quot;                                                                    
+## [23] &quot;Police Forces of Ethiopia (1991-2018) Liyu Police&quot;                                
+## [24] &quot;Police Forces of Ethiopia (1991-2018) Prison Guards&quot;                              
+## [25] &quot;Protesters (South Sudan)&quot;                                                         
+## [26] &quot;Protesters angry over the alleged transportation of sugar to pro-government areas&quot;
+## [27] &quot;Qeerroo Youth Militia&quot;                                                            
+## [28] &quot;Security Forces&quot;                                                                  
+## [29] &quot;Somali mob&quot;                                                                       
+## [30] &quot;Somali rioters&quot;                                                                   
+## [31] &quot;Somali Rioters&quot;                                                                   
+## [32] &quot;Tigray Ethnic Militia (Ethiopia)&quot;                                                 
+## [33] &quot;TPDM: Tigray People&#39;s Democratic Movement&quot;                                        
+## [34] &quot;TPLF: Tigray People&#39;s Liberation Front&quot;                                           
+## [35] &quot;Unidentified assailants&quot;                                                          
+## [36] &quot;Unknown armed men&quot;                                                                
+## [37] &quot;Unknown attack&quot;                                                                   
+## [38] &quot;Unknown violent clashes&quot;</code></pre>
+<pre class="r"><code># check it again
+setdiff(unique(cdf$actor_tax), unique(actor_tax$actor_tax)) </code></pre>
+<pre><code>##  [1] &quot;Unknown violent clashes&quot;                                                          
+##  [2] &quot;Unknown attack&quot;                                                                   
+##  [3] &quot;Benishangul Gumuz People&#39;s Liberation Movement&quot;                                   
+##  [4] &quot;Security Forces&quot;                                                                  
+##  [5] &quot;Oromo Protesters&quot;                                                                 
+##  [6] &quot;Qeerroo Youth Militia&quot;                                                            
+##  [7] &quot;TPLF: Tigray People&#39;s Liberation Front&quot;                                           
+##  [8] &quot;Somali mob&quot;                                                                       
+##  [9] &quot;Oromo rioters&quot;                                                                    
+## [10] &quot;Ethnic Oromos&quot;                                                                    
+## [11] &quot;Somali rioters&quot;                                                                   
+## [12] &quot;Ethnic Somalis&quot;                                                                   
+## [13] &quot;Somali Rioters&quot;                                                                   
+## [14] &quot;Protesters angry over the alleged transportation of sugar to pro-government areas&quot;
+## [15] &quot;Ethiopian government&quot;                                                             
+## [16] &quot;Unknown armed men&quot;                                                                
+## [17] &quot;Unidentified assailants&quot;                                                          
+## [18] &quot;Police Forces of Ethiopia (1991-2018) Prison Guards&quot;                              
+## [19] &quot;Tigray Ethnic Militia (Ethiopia)&quot;                                                 
+## [20] &quot;EPRDF: Ethiopian People&#39;s Revolutionary Democratic Front&quot;                         
+## [21] &quot;Police Forces of Ethiopia (1991-2018) Liyu Police&quot;                                
+## [22] &quot;Government of Kenya&quot;                                                              
+## [23] &quot;Amaro Ethnic Militia (Ethiopia)&quot;                                                  
+## [24] &quot;Government of Ethiopia (1991-2018)&quot;                                               
+## [25] &quot;TPDM: Tigray People&#39;s Democratic Movement&quot;                                        
+## [26] &quot;Nyangatom&quot;                                                                        
+## [27] &quot;Gabra&quot;                                                                            
+## [28] &quot;Protesters (South Sudan)&quot;                                                         
+## [29] &quot;Dassanetch&quot;                                                                       
+## [30] &quot;Borana, Guji&quot;                                                                     
+## [31] &quot;Geri&quot;                                                                             
+## [32] &quot;Ari&quot;                                                                              
+## [33] &quot;Degodia&quot;                                                                          
+## [34] &quot;Argobba Ethnic Militia (Ethiopia)&quot;                                                
+## [35] &quot;Burji Ethnic Militia (Ethiopia)&quot;                                                  
+## [36] &quot;Habro Communal Militia (Ethiopia)&quot;                                                
+## [37] &quot;APP: Afar People&#39;s Party&quot;                                                         
+## [38] &quot;Mutiny of Military Forces of Ethiopia (1991-2018)&quot;</code></pre>
+<pre class="r"><code>table(cdf_ac_tax$actor_level_1_txt, useNA = &quot;always&quot;)</code></pre>
+<pre><code>## 
+##  civilian groups        civilians       government  movement groups 
+##               16               27             1620             1697 
+## religious groups   violent groups             &lt;NA&gt; 
+##                7             1880              218</code></pre>
+<pre class="r"><code>cdf_ac_tax$actor_c &lt;- &quot;others&quot;
+cdf_ac_tax$actor_c[
+  cdf_ac_tax$actor_level_1_txt == &quot;government&quot;] &lt;- &quot;government&quot;
+cdf_ac_tax$actor_c[
+  cdf_ac_tax$actor_level_1_txt == &quot;violent groups&quot;] &lt;- &quot;violent groups&quot;
+cdf_ac_tax$actor_c &lt;- factor(
+  cdf_ac_tax$actor_c, levels = c(
+    &quot;government&quot;,&quot;violent groups&quot;,&quot;others&quot;))
+table(cdf_ac_tax$actor_level_1_txt, 
+      cdf_ac_tax$actor_c, useNA = &quot;always&quot;)</code></pre>
+<pre><code>##                   
+##                    government violent groups others &lt;NA&gt;
+##   civilian groups           0              0     16    0
+##   civilians                 0              0     27    0
+##   government             1620              0      0    0
+##   movement groups           0              0   1697    0
+##   religious groups          0              0      7    0
+##   violent groups            0           1880      0    0
+##   &lt;NA&gt;                      0              0    218    0</code></pre>
+<pre class="r"><code># Add rows for month for each event that spanned more than one month
+cdf &lt;- data.table::setDT(cdf_ac_tax)[
+  , list(dataset = dataset, date = date, 
+         enddate = enddate, actor_tax = actor_tax, 
+         actor2 = actor2, event_tax = event_tax, 
+         latitude = latitude, longitude = longitude, 
+         event = event, deaths = deaths, 
+         event_1 = Level_1_text, event_2 = Level_2_text, 
+         event_3 = Level_3_text, event_4 = Level_4_text, 
+         actor_1 = actor_level_1_txt, actor_2 = actor_level_2_txt, 
+         actor_c = actor_c, 
+         notes = notes, prec_tax = prec_tax, 
+         month = seq(date, enddate, by = &quot;month&quot;)), 
+  by = 1:nrow(cdf_ac_tax)]
+
+table(cdf$actor_1, cdf$actor_c, useNA = &quot;always&quot;)</code></pre>
+<pre><code>##                   
+##                    government violent groups others &lt;NA&gt;
+##   civilian groups           0              0     26    0
+##   civilians                 0              0     37    0
+##   government             1697              0      0    0
+##   movement groups           0              0   2035    0
+##   religious groups          0              0     18    0
+##   violent groups            0           2412      0    0
+##   &lt;NA&gt;                      0              0    252    0</code></pre>
+<pre class="r"><code># Extract month and year from date
+cdf$Month_Yr &lt;- zoo::as.yearmon(cdf$month)</code></pre>
+</div>
+<div id="save-final-dataset" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> Save final dataset</h1>
 <pre class="r"><code>write.csv(cdf, here::here(&quot;data&quot;, &quot;ethiopia_conflict.csv&quot;))
 saveRDS(cdf, here::here(&quot;data&quot;, &quot;ethiopia_conflict.rds&quot;))
 haven::write_dta(cdf, here::here(&quot;data&quot;, &quot;ethiopia_conflict.dta&quot;))
@@ -977,7 +1311,7 @@ Donnay, Karsten, Eric T. Dunford, Erin C. McGrath, David Backer, and David E. Cu
 <div class="footnotes footnotes-end-of-document">
 <hr />
 <ol>
-<li id="fn1"><p>Original author. Replicated by Tom Brailey in August, 2023<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p>Original author. Replicated by Tom Brailey in September, 2023<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
 
