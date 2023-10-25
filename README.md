@@ -1,2 +1,2 @@
 # integrated-conflict
-Code and documentation related to the integrated conflict dataset
+Code and documentation related to the Ethiopia integrated conflict dataset.
