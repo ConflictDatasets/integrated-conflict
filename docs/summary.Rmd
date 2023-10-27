@@ -1,0 +1,105 @@
+---
+title: "Integrating Conflict Event Data (Ethiopia: 1997 - 2016)"
+subtitle: "Supporting Information"
+author: "Tom Brailey"
+date: "`r format(Sys.time(), '%B, %Y')`" 
+output:
+  bookdown::html_document2:
+    fig_caption: yes
+    fig_crop: yes
+    keep_tex: yes
+    number_sections: true
+    citation_package: biblatex
+    toc: true
+    word_count: true
+bibliography: ../bib/conflict-biblio.bib
+link-citations: true
+linkcolor: blue
+biblatexoptions: [backend=biber,citestyle=authoryear,maxcitenames=2, useprefix,autocite=inline,doi=false,url=false,isbn=false]
+header-includes:
+  - \usepackage[english]{babel}
+  - \usepackage[utf8]{inputenc}
+  - \usepackage{csquotes}
+  - \usepackage{fancyhdr}
+  - \usepackage{setspace}
+  - \usepackage{geometry}
+  - \usepackage{verbatim}
+  - \usepackage{hyperref}
+  - \usepackage{xcolor}
+  - \usepackage{floatrow}
+  - \floatsetup[table]{capposition=top}
+  - \floatsetup[figure]{capposition=top}
+fontsize: 12pt
+---
+
+# Introduction
+
+In this project we merge information on conflict events in Ethiopia stemming from four different sources (ACLED, UCDP-GED, GTD, SCAD) into one unified dataset. This dataset integration is based on the Matching Event Data by Location, Time, and Type (MELTT) methodology developed by @Donnay2019 and provides geo-referenced information on conflict events in Ethiopia over the period 1997-2017.
+
+In the integration, we follow a protocol divided in 5 steps: first, the four conflict datasets are imported and cleaned separately. In the case of the ACLED dataset, the cleaning process also includes a reshaping of the dataset from long to wide format, i.e., from having one observation per day we obtain one observation per episode (an event spanning one or more days). In the cleaning process we also look for potential duplicated events within each dataset. After this first step, we follow @Donnay2019 and develop actor, event, and precision taxonomies necessary to run the MELTT algorithm and corresponding R package. Then, we use the taxonomies to integrate the four separate datasets with the MELTT package, adjusting for different temporal and spatial windows. After that, we review and manually code all events that were flagged by MELTT as potential duplicates across datasets. Finally, a unified, de-duplicated dataset is produced.
+
+# Cleaning
+
+## ACLED
+
+The ACLED dataset registers a total of 4102 observations over the period 1997-2017. In the cleaning process, we look for potential duplicated events by inspecting instances where all the main variables display the same value and then drop redundant observations. This process leads us to exclude 31 observations. We carry out further cleaning of the ACLED dataset by substituting categorical responses with numerical values and by changing event types to match those in @Donnay2019. Unlike Donnay at al., we stick to ACLED's original distinction between "protest" and "riots", irrespective of the number of casualties.
+
+The structure of the ACLED dataset is in long format, meaning that events spanning multiple days (also defined as "episodes" in Donnay et al.'s terminology) are registered as separate observations. This is in contrast with other conflict event data sources, where one event or episode corresponds to one observation. For this reason, we attempt to reshape the ACLED dataset into wide format. We do this by looking for events occurring on consecutive days in the same location and involving the same actors, and then transform them into the same unique event. After reshaping, the number of events or episodes decreases further to 3145 observations.
+
+## UCDP-GED
+
+The UCDP-GED covers 1659 events in Ethiopia over the period 1997-2017. As we did for ACLED, we look for potential duplicated events by excluding observations that display the same value across all the main variables, and drop 1 duplicated event, for a total of 1658 observations. As a further cleaning, in the GED dataset we swap "primary" and "secondary" actors (also known as "side A" and "side B") for all events coded as state-based violence, following Donnay et al. [@Donnay2019 Appendix,24].
+
+## GTD
+
+The GTD dataset includes 109 event observations in Ethiopia between 1997 and 2017. We look for potential duplicated observations by inspecting instances where the main variables have the same value, and drop 8 duplicated events, leading to a total of 101 observations.
+
+## SCAD
+
+The SCAD Ethiopia data between 1997 and 2017 includes 175 observations. As for previous datasets, we look for potential instances of duplicated events, but do not find any in this case.
+
+# Creating Taxonomies
+
+While we incorporate Donnay et al.'s event and precision taxonomies, we adjust the actor taxonomy to the specific case of Ethiopia. The precise re-categorization and taxonomies are reported at the end of this document.
+
+# Integrating with MELTT
+
+The MELTT protocol is based on three main ingredients: the event taxonomies (actor, event, precision), spatial and temporal fuzziness. Different fuzziness specifications tell the MELTT algorithm how to look for potential duplicated events across datasets, based on the fact that different data sources might code the precise location (expressed in degrees, through latitude and longitude) and dates of the event slightly differently.
+
+Based on simulations, Donnay et. al. recommend using a spatial fuzziness of 3 km and a temporal fuzziness of one day. We test how the algorithm works using different fuzziness specifications and compare the results, as shown in the table below. Donnay et al.'s recommended specification is highlighted and in bold. In all cases, the starting number of observations (combining all four datasets) is 5077. This means that, setting a fuzziness of 1 km and 1 day, MELTT identifies and drops 82 observations as duplicates, and leaves 26 cases as "flagged" and potential duplicates to be manually reviewed.
+
+| Spatial window (km) | Temporal window (days) | Duplicates | Flagged events |
+|---------------------|------------------------|------------|----------------|
+| 1                   | 1                      | 82         | 26             |
+| 2                   | 1                      | 90         | 26             |
+| 3                   | 1                      | 92         | 28             |
+| 4                   | 1                      | 95         | 28             |
+| 5                   | 1                      | 97         | 28             |
+| 1                   | 2                      | 88         | 31             |
+| 2                   | 2                      | 96         | 32             |
+| 3                   | 2                      | 99         | 35             |
+| 4                   | 2                      | 102        | 35             |
+| 5                   | 2                      | 104        | 37             |
+
+# Inspecting Fuzziness and Flagged Events
+
+Before selecting the preferred temporal and spatial windows, we inspect how the flagged and de-duplicated events change from one fuzziness specification to the other. For example, we compare the fuzziness of one day and 1 km with that of one day and 5 km (in bold). In this comparison, we find that increasing the spatial window from 1 to 5 km increases the number of duplicates to be dropped by 15 observations, and that of flagged events by 2 observations. Interestingly, all the flagged events in the 1 day, 1 km specification are included in that of 1 day, 5 km, and need manual reviewing and coding.
+
+To better understand how the MELTT algorithm works and performs, we select and inspect two cases among the 16 new duplicates generated when increasing the spatial window. As our first example, we identify a new duplicate that matches an event from SCAD with one in ACLED. In SCAD, the event was coded as "bomb exploding in a hotel" on the 11/02/1997, at latitude 9.304650 and longitude 42.13260. The attackers were unknown and the target civilians, with two casualties. The matched ACLED event, on the other hand, was coded as a "grenade attack" happening on the 10/02/1997, at latitude 9.3167 and longitude 42.1167. The actors involved are an "Unidentified Armed Group" and "civilians", and number of casualties is the same as in SCAD. We can see that, in this case, slightly increasing the spatial window (from 1 to 5 km) has correctly identified a duplicated event and lead to a more precise integration.
+
+A second example of an event that was identified as duplicated in the 5 km specification, but not in the 1 km one, matches an event from GTD with one in ACLED. The GED entry records an event happening on the 17/04/2004, at latitude 8.980629 and longitude 37.86505, where "thirteen students were wounded by two bomb attacks by Ethiopian Security Forces at Ambo Secondary School in southwestern Ethiopia" and adds that "several people were also wounded by bullets fired by the same security forces. No group claimed responsibility for the attack.". The matching ACLED entry was recorded on the 16/04/2004, at latitude 8.9833, longitude 37.85, as a grenade attack by an Unidentified Armed Group against students. Also in this case, slightly increasing the spatial window (from 1 to 5 km) has correctly identified a duplicated event and lead to a more precise integration.
+
+We then move to the "flagged events", which are potential duplicates to be reviewed and coded manually. Entries coded as "events" correspond to conflicts lasting only one day (or at least coded as such), while entries coded as "episodes" last several days.
+
+In the specification of one day, 1 km, we obtain 38 flagged events. In that one day, 5 km, we obtain those same 38 flagged events, and four new ones. We manually review all flagged cases and see that the two new flagged events are duplicates, which further supports the slight increase in the spatial window. More generally, in our manual review and coding we find that, of the initial 38 flagged events, 34 were duplicates, and only 4 were unique events.
+
+After identifying duplicates (either automatically or manually), the MELTT package drops one observation in order to produce a de-duplicated, merged dataset. When doing this, we gave priority to the ACLED observations (to be kept), as they generally provided more detailed information on the actors involved and on the nature of the conflict. In the fuzziness of one day, 5 km, the "flagged episodes" mostly come from ACLED (40 cases), GED (1 case), and SCAD (1 case), while instances coded as "episodes" come from GED (29 cases), ACLED (2 cases) and SCAD (11 cases).
+
+# Generating a Merged Dataset
+
+If we set a fuzziness of one day and 5 km, manually review all flagged events, we can then move to the integration of datasets. After dropping duplicates, both automatically and manually, we reduce the number of unique events from 5465 to 5392
+
+# Final data
+
+The final merged dataset is available in .csv, .dta, .rds, and .sav format. A more detailed overview of the cleaning and merging process is available in /code/ethiopia_merging.Rmd.
+
