@@ -905,7 +905,7 @@ nrow(new_duplicates)</code></pre>
 ##                  actor_tax event_tax prec_tax
 ## 699 Government of Ethiopia         1        2
 ## [1] &quot;This is the same event but in GED it spans two days while in ACLED only one. We keep the ACLED observation and drop GED, but because we are interested in the number of events (rather than the length of events), we then recode the start and/or end date of the ACLED observation to match GED.&quot;</code></pre>
-<p>While here we see an examples of a flagged instance where the events, again coming from ACLE and GED, turned out not to be duplicates:</p>
+<p>While here we see an examples of a flagged instance where the events, again coming from ACLED and GED, turned out not to be duplicates:</p>
 <pre><code>##           start        end       date    enddate                    event_type
 ## 3357 2000-12-09 2000-12-09 2000-12-09 2000-12-09 Battle-No change of territory
 ##                                       actor1                      actor2
@@ -1295,10 +1295,10 @@ cdf$Month_Yr &lt;- zoo::as.yearmon(cdf$month)</code></pre>
 </div>
 <div id="save-final-dataset" class="section level1" number="8">
 <h1><span class="header-section-number">8</span> Save final dataset</h1>
-<pre class="r"><code>write.csv(cdf, here::here(&quot;data&quot;, &quot;ethiopia_conflict.csv&quot;))
-saveRDS(cdf, here::here(&quot;data&quot;, &quot;ethiopia_conflict.rds&quot;))
-haven::write_dta(cdf, here::here(&quot;data&quot;, &quot;ethiopia_conflict.dta&quot;))
-haven::write_sav(cdf, here::here(&quot;data&quot;, &quot;ethiopia_conflict.sav&quot;))</code></pre>
+<pre class="r"><code>write.csv(cdf4, here::here(&quot;data&quot;, &quot;ethiopia_conflict.csv&quot;))
+saveRDS(cdf4, here::here(&quot;data&quot;, &quot;ethiopia_conflict.rds&quot;))
+haven::write_dta(cdf4, here::here(&quot;data&quot;, &quot;ethiopia_conflict.dta&quot;))
+haven::write_sav(cdf4, here::here(&quot;data&quot;, &quot;ethiopia_conflict.sav&quot;))</code></pre>
 </div>
 <div id="references" class="section level1 unnumbered">
 <h1>References</h1>
@@ -1311,7 +1311,7 @@ Donnay, Karsten, Eric T. Dunford, Erin C. McGrath, David Backer, and David E. Cu
 <div class="footnotes footnotes-end-of-document">
 <hr />
 <ol>
-<li id="fn1"><p>Original author. Replicated by Tom Brailey in September, 2023<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p>Original author. Replicated by Tom Brailey in October, 2023<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
 

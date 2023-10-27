@@ -1304,6 +1304,18 @@ flagged_km3 %in% flagged_km1
 flagged_km5 %in% flagged_km1
 flagged_km5 %in% flagged_km3
 
+flagged_event_km5_dfs <- NA
+flagged_episode_km5_dfs <- NA
+
+for(i in 1:length(flagged_km5)){
+  flagged_event_km5_dfs[i] <- flagged_km5[[i]]$`Flagged Event Information`$data.source
+  flagged_episode_km5_dfs[i] <- flagged_km5[[i]]$`Flagged Episode Information`$data.source
+}
+
+table(flagged_event_km5_dfs)
+
+table(flagged_episode_km5_dfs)
+
 ```
 
 
@@ -1770,7 +1782,7 @@ for (i in c(4, 6)) {
 ```
 
 
-While here we see an examples of a flagged instance where the events, again coming from ACLE and GED, turned out not to be duplicates:
+While here we see an examples of a flagged instance where the events, again coming from ACLED and GED, turned out not to be duplicates:
 
 ```{r, echo = FALSE}
 
@@ -2210,10 +2222,10 @@ cdf$Month_Yr <- zoo::as.yearmon(cdf$month)
 
 ```{r}
 
-write.csv(cdf, here::here("data", "ethiopia_conflict.csv"))
-saveRDS(cdf, here::here("data", "ethiopia_conflict.rds"))
-haven::write_dta(cdf, here::here("data", "ethiopia_conflict.dta"))
-haven::write_sav(cdf, here::here("data", "ethiopia_conflict.sav"))
+write.csv(cdf4, here::here("data", "ethiopia_conflict.csv"))
+saveRDS(cdf4, here::here("data", "ethiopia_conflict.rds"))
+haven::write_dta(cdf4, here::here("data", "ethiopia_conflict.dta"))
+haven::write_sav(cdf4, here::here("data", "ethiopia_conflict.sav"))
 
 ```
 
