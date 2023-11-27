@@ -1,5 +1,5 @@
 ---
-title: "Integrating Conflict Event Data (Ethiopia: 1997 - 2016)"
+title: "Integrating Conflict Event Data (Ethiopia: 1997 - 2017)"
 subtitle: "Supporting Information"
 author: "Tom Brailey"
 date: "`r format(Sys.time(), '%B, %Y')`" 
