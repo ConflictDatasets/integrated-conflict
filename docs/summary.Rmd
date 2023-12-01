@@ -1,5 +1,5 @@
 ---
-title: "Integrating Conflict Event Data (Ethiopia: 1997 - 2016)"
+title: "Integrating Conflict Event Data (Ethiopia: 1997 - 2017)"
 subtitle: "Supporting Information"
 author: "Tom Brailey"
 date: "`r format(Sys.time(), '%B, %Y')`" 
@@ -34,9 +34,11 @@ fontsize: 12pt
 
 # Introduction
 
-In this project we merge information on conflict events in Ethiopia stemming from four different sources (ACLED, UCDP-GED, GTD, SCAD) into one unified dataset. This dataset integration is based on the Matching Event Data by Location, Time, and Type (MELTT) methodology developed by @Donnay2019 and provides geo-referenced information on conflict events in Ethiopia over the period 1997-2017.
+In this project we merge information on conflict events in Ethiopia stemming from four different sources (ACLED, UCDP-GED, GTD, SCAD) into one unified dataset. This dataset integration is based on the Matching Event Data by Location, Time, and Type (MELTT) methodology developed by @Donnay2019 and provides geo-referenced information on conflict events in Ethiopia over the period 1997 - 2017.
 
 In the integration, we follow a protocol divided in 5 steps: first, the four conflict datasets are imported and cleaned separately. In the case of the ACLED dataset, the cleaning process also includes a reshaping of the dataset from long to wide format, i.e., from having one observation per day we obtain one observation per episode (an event spanning one or more days). In the cleaning process we also look for potential duplicated events within each dataset. After this first step, we follow @Donnay2019 and develop actor, event, and precision taxonomies necessary to run the MELTT algorithm and corresponding R package. Then, we use the taxonomies to integrate the four separate datasets with the MELTT package, adjusting for different temporal and spatial windows. After that, we review and manually code all events that were flagged by MELTT as potential duplicates across datasets. Finally, a unified, de-duplicated dataset is produced.
+
+We provide the taxonomy datasets and the final merged dataset on our [OSF page](https://osf.io/6vkm8/), but we provide written instructions for downloading the other conflict-specific datasets (ACLED, GTD, GED, and SCAD), this is because datasets such as ACLED, though publicly available, require researchers to create an account and provide private security keys in order to download their data.
 
 # Cleaning
 
