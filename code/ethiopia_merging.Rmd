@@ -1,6 +1,6 @@
 ---
 title: "Ethiopia Conflict Data"
-author: "Micol Morellini^[Original author. Replicated by Tom Brailey in `r format(Sys.time(), '%B, %Y')`]"
+author: "Tom Brailey^[Original author: Micol Morellini.]"
 date: "10/27/2021" 
 output:
   bookdown::html_document2:
@@ -69,6 +69,8 @@ To reproduce the final dataset, one needs the following files:
 1. ged201.RData
 1. SCAD2018Africa_Final.csv
 
+We provide the first three dataset, but we provide written instructions for downloading the other four datasets, this is because datasets such as ACLED, though publicly available, require researchers to create an account and provide private security keys in order to download their data.
+
 The code used to reproduce the outputs can be found in the corresponding .Rmd file. 
 
 # Importing datasets
@@ -93,6 +95,14 @@ actor_tax <- read.csv(paste0(fp_data, "actor_tax.csv"))
 ```
 
 ## ACLED
+
+### How to Download
+
+1. Go to https://acleddata.com/data-export-tool/.
+1. Create an account.
+1. Under the `Data Export Tool` heading, paste your access key, specify `From` to be "01/01/1997" and `To` to be "31/01/2022". `Event Type`, `Sub Event Type`, `Actor Type`, `Actor`, `Region`, and `Location` should take the value of `All`. `Country` should be `Ethiopia` and `Keyword` should be left blank. Lastly, provide the email address associated with your account, and set `Export Type` to be `Actor Based`. 
+1. Hit `Export`. 
+1. Save data in a folder within your project called `ACLED`.
 
 The ACLED dataset registers a total of 4102 observations over the period 1997-2017.
 
@@ -173,7 +183,7 @@ acled$event_type <- as.factor(acled$event_type)
 
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 levels(acled$event_type)
 
@@ -347,6 +357,12 @@ rm(acled_old, duplic, lut1, lut3)
 
 ## GTD 
 
+### How to Download
+
+1. Go to https://www.start.umd.edu/gtd/contact/download
+1. Provide contact and institutional details. `Country` should be set to `Ethiopia` (you will be given all years in the GTD dataset, but you will subset these values in the code chunk below).
+1. Once you have received approval, download the data and store it in a folder called "GTD".
+
 Subsetting the GTD dataset to years between 1997 and 2017 results in 109 observations.
 
 ```{r, include = FALSE}
@@ -457,6 +473,13 @@ rm(duplic)
 
 ## GED
 
+### How to Download
+
+1. Go to https://ucdp.uu.se/downloads/. 
+1. Scroll down to `UCDP Georeferenced Event Dataset (GED) Global version`.
+1. Click on the `R` tab.
+1. Save the data in a folder called `UCDP GED/ged201-RData`.
+
 Subsetting the GED dataset to years between 1997 and 2017 produces 1659 observations.
 
 ```{r, include = FALSE}
@@ -536,7 +559,13 @@ rm(duplic, ged201)
 
 ## SCAD
 
-Subsetting the SCAD dataset to years between 1997 and 2016 results in 175 observations.
+### How to Download
+
+1. Go to https://www.strausscenter.org/ccaps-research-areas/social-conflict/database/. 
+1. Click on `Download SCAD—Africa`. 
+1. Save the dataset in a folder called `UCDP GED`
+
+Subsetting the SCAD dataset to years between 1997 and 2017 results in 175 observations.
 
 ```{r, include = FALSE}
 
@@ -1319,7 +1348,7 @@ table(flagged_episode_km5_dfs)
 ```
 
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 length(flagged_km1)
 length(flagged_km3)
@@ -1379,7 +1408,7 @@ We see that increasing the fuzziness changes the number of certain duplicates. T
 
 First, we look at the list in `new_duplicates` and select the following event as an example:
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 # we look at the list in new_duplicates, and select the example with data == 4, 
 # event == 1, latitude ==9.304650 & longitude ==42.13260
@@ -1394,7 +1423,7 @@ head(potential_scad)
 
 Due to the MELTT processing, we need to manually reconstruct to which event, from a different dataset, this SCAD example has been matched. By looking into the `meltt` output, we find that the matched event comes from ACLED. We then look into the ACLED original dataset for events with similar characteristics (in terms of date, longitude and latitude) to the SCAD example, and find two potentisal candidates. With a manual comparison, we see that the event that interests us is that happening on the 1997-02-10.
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 # Due to the MELTT processing, we need to manually reconstruct to which event 
 # our example has been matched. We thus look in the event_matched list for the 
@@ -1420,7 +1449,7 @@ head(potential_acled1)
 
 We now repeat the same process with a different example. We select the following observation, originally coming from the GTD dataset, as our second example:
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 #we do the same with a different example. We select the example with data == 3, 
 # event == 13, latitude ==8.980629 & longitude == 37.86505
@@ -1433,7 +1462,7 @@ head(potential_gtd)
 
 We find hat the event matching our selected case also comes from ACLED. With a manual comparison, we see that the event that interests us is the one happening on the 2004-04-16.
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 #We find our selected case in event_matched by looking for the case where 
 # data3 == 3 & event3== 13, and find the  matched event, which comes from ACLED 
@@ -1460,7 +1489,7 @@ In both of these example, the new duplicates with the increased spatial fuzzines
 
 Using a temporal window of one day and a spatial window of 5km, ``meltt`` identified and removed 95 duplicate events, as well as 28 additional potential duplicates to be reviewed manually, from a starting point of 4981 observations. We can visualize the share of unique and duplicate events for each conflict dataset, as well as their distribution over time.
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 plot(output_km5)
 t1 <- meltt::tplot(output_km5, time_unit = "weeks")
@@ -1767,7 +1796,7 @@ ged[unlist(fl2[42]),vars_ged]
 
 We see two examples of flagged events which are indeed duplicates, but were not immediately matched by MELTT because the two original datasets, ACLED and GED, coded the events as happening on slightly different dates: 
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 for (i in c(4, 6)) {
   print(acled[unlist(fl[i]),vars_acled])
@@ -1784,7 +1813,7 @@ for (i in c(4, 6)) {
 
 While here we see an examples of a flagged instance where the events, again coming from ACLED and GED, turned out not to be duplicates:
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 print(acled[unlist(fl[13]),vars_acled])
 print(ged[unlist(fl2[13]),vars_ged])
@@ -1797,7 +1826,7 @@ print(paste("This is not the same event, as the actors involved are different.",
 
 After having assessed which events are unique and which are duplicates, we drop the duplicates to obtain a dataset of uniquely identified events.
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 # F is to keep both flagged events
 # T is to remove episode (not event) from flagged events
@@ -1928,7 +1957,7 @@ cdf4$enddate[cdf4$dataset=="acled"] <- cdf4$enddate_acled[cdf4$dataset=="acled"]
 cdf4$enddate[cdf4$dataset=="ged"] <- cdf4$enddate_ged[cdf4$dataset=="ged"]
 cdf4$enddate[cdf4$dataset=="scad"] <- cdf4$enddate_scad[cdf4$dataset=="scad"]
 cdf4$enddate[cdf4$dataset=="gtd"] <- cdf4$enddate_gtd[cdf4$dataset=="gtd"]
-cdf4$enddate <- as.Date(cdf4$enddate)
+cdf4$enddate <- as.Date(cdf4$enddate, origin = "1970-01-01")
 tail(table(cdf4$enddate, useNA = "always"))#there are no NAs
 
 cdf4[1:50, c("dataset", "enddate_acled", "enddate_ged", "enddate_scad",
@@ -2119,7 +2148,7 @@ str(cdf)
 
 To account for potential further duplicates, we look for instances of events where all variables, except the event number, are identical:
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 
 duplic <- cdf[
   duplicated(cdf[ , c(
