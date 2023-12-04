@@ -627,7 +627,7 @@ rm(duplic)
 
 ## Actor taxonomy
 
-We develop the actor taxonomies separately for each conflict dataset. The initial recodng process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by @Donnay2019 to standardise actors across datasets. This can be found in the file `Ethiopia_merging_notes_suppinfo.doc`.
+We develop the actor taxonomies separately for each conflict dataset. The initial recoding process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by @Donnay2019 to standardise actors across datasets. This can be found in the file `Ethiopia_merging_notes_suppinfo.doc`.
 
 ### ACLED
 
