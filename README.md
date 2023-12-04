@@ -1,6 +1,6 @@
 # integrated-conflict
 
-This repository contains code and documentation related to the Ethiopia integrated conflict dataset.
+This repository contains code and documentation related to the Ethiopia integrated conflict dataset between January 1997 and December 2017.
 
 The main code document contains details on downloading existing conflict datasets from their respective websites. The final merged conflict dataset is available on [OSF](https://osf.io/6vkm8/), as are the individual taxonomy datasets.
 
