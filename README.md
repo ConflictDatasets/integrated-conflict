@@ -9,7 +9,7 @@ To reproduce the final dataset, one needs the following files:
 1. event_tax.csv
 1. prec_tax.csv
 1. actor_tax.csv
-1. 1997-01-01-2022-01-31-Ethiopia.csv"
+1. 1997-01-01-2022-01-31-Ethiopia.csv
 1. globalterrorismdb_0221dist.csv
 1. ged201.RData
 1. SCAD2018Africa_Final.csv
