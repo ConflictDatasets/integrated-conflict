@@ -427,7 +427,7 @@ display: none;
 <li>event_tax.csv</li>
 <li>prec_tax.csv</li>
 <li>actor_tax.csv</li>
-<li>1997-01-01-2022-01-31-Ethiopia.csv”</li>
+<li>1997-01-01-2022-01-31-Ethiopia.csv</li>
 <li>globalterrorismdb_0221dist.csv</li>
 <li>ged201.RData</li>
 <li>SCAD2018Africa_Final.csv</li>
@@ -467,9 +467,178 @@ actor_tax &lt;- read.csv(paste0(fp_data, &quot;actor_tax.csv&quot;))</code></pre
 ##  [9] &quot;Riots&quot;                                     
 ## [10] &quot;Violence against civilians&quot;</code></pre>
 <p>We carry out further cleaning of the ACLED dataset by substituting categorical responses with numerical values and by changing the format of other variables (including latitude and longitude, and time-related variables).</p>
+<pre class="r"><code># looking for missing values
+apply(acled, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##          data_id              iso    event_id_cnty event_id_no_cnty 
+##            FALSE            FALSE            FALSE            FALSE 
+##       event_date             year   time_precision       event_type 
+##            FALSE            FALSE            FALSE            FALSE 
+##   sub_event_type           actor1    assoc_actor_1           inter1 
+##            FALSE            FALSE            FALSE            FALSE 
+##           actor2    assoc_actor_2           inter2      interaction 
+##            FALSE            FALSE            FALSE            FALSE 
+##           region          country           admin1           admin2 
+##            FALSE            FALSE            FALSE            FALSE 
+##           admin3         location         latitude        longitude 
+##            FALSE            FALSE            FALSE            FALSE 
+##    geo_precision           source     source_scale            notes 
+##            FALSE            FALSE            FALSE            FALSE 
+##       fatalities        timestamp             iso3      event_type2 
+##            FALSE            FALSE            FALSE            FALSE</code></pre>
+<pre class="r"><code># now for columns, INTER1, INTER2 and INTERACTION numerical substitutes for
+# categories are provided. replace them with the actual values from the 
+# codebook.
+# inter1
+
+acled$inter1 &lt;- as.character(acled$inter1)
+
+table(acled$inter1)</code></pre>
+<pre><code>## 
+##    1    2    3    4    5    6    8 
+## 1612  384  180  229  243 1429   25</code></pre>
+<pre class="r"><code>lut1 &lt;- c(&quot;1&quot; = &quot;Government or mutinous force&quot;, &quot;2&quot; = &quot;Rebel force&quot;,
+          &quot;3&quot; = &quot;Political militia&quot;, &quot;4&quot; = &quot;Ethnic militia&quot;, 
+          &quot;5&quot; = &quot;Rioters&quot;, &quot;6&quot; = &quot;Protesters&quot;, &quot;7&quot; = &quot;Civilians&quot;, 
+          &quot;8&quot; = &quot;Outside/external force&quot;)
+
+acled$inter1 &lt;- lut1[acled$inter1]
+
+head(acled$inter1)</code></pre>
+<pre><code>## [1] &quot;Ethnic militia&quot;               &quot;Government or mutinous force&quot;
+## [3] &quot;Rioters&quot;                      &quot;Rioters&quot;                     
+## [5] &quot;Protesters&quot;                   &quot;Protesters&quot;</code></pre>
+<pre class="r"><code># interaction
+acled$interaction &lt;- as.character(acled$interaction)
+table(acled$interaction)</code></pre>
+<pre><code>## 
+##   10   11   12   13   14   15   16   17   18   20   22   23   27   28   30   33 
+##    8   32 1210   83  124  126  497  455   57   21    1    8   40   11   12    4 
+##   34   35   36   37   38   44   45   47   48   50   55   57   60   78   80   88 
+##    7    2    5  136    2  159    1   40    2   58   19   37  927   16    1    1</code></pre>
+<pre class="r"><code>lut3 &lt;- c(
+  &quot;10&quot; = &quot;SOLE MILITARY ACTION&quot;, &quot;11&quot; = &quot;MILITARY VERSUS MILITARY&quot;,
+  &quot;12&quot; = &quot;MILITARY VERSUS REBELS&quot;, &quot;13&quot; = &quot;MILITARY VERSUS POLITICAL MILITIA&quot;,
+  &quot;14&quot; = &quot;MILITARY VERSUS COMMUNAL MILITIA&quot;, &quot;15&quot; = &quot;MILITARY VERSUS RIOTERS&quot;,
+  &quot;16&quot; = &quot;MILITARY VERSUS PROTESTERS&quot;, &quot;17&quot; = &quot;MILITARY VERSUS CIVILIANS&quot;,
+  &quot;18&quot; = &quot;MILITARY VERSUS OTHER&quot;, &quot;20&quot; = &quot;SOLE REBEL ACTION &quot;,
+  &quot;22&quot; = &quot;REBELS VERSUS REBELS&quot;, &quot;23&quot; = &quot;REBELS VERSUS POLITICAL MILIITA&quot;,
+  &quot;24&quot; = &quot;REBELS VERSUS COMMUNAL MILITIA&quot;, &quot;25&quot; = &quot;REBELS VERSUS RIOTERS&quot;,
+  &quot;26&quot; = &quot;REBELS VERSUS PROTESTERS&quot;, &quot;27&quot; = &quot;REBELS VERSUS CIVILIANS&quot;,
+  &quot;28&quot; = &quot;REBELS VERSUS OTHERS&quot;, &quot;30&quot; = &quot;SOLE POLITICAL MILITIA ACTION&quot;,
+  &quot;33&quot; = &quot;POLITICAL MILITIA VERSUS POLITICAL MILITIA&quot;, 
+  &quot;34&quot; = &quot;POLITICAL MILITIA VERSUS COMMUNAL MILITIA&quot;, 
+  &quot;35&quot; = &quot;POLITICAL MILITIA VERSUS RIOTERS&quot;, 
+  &quot;36&quot; = &quot;POLITICAL MILITIA VERSUS PROTESTERS&quot;, 
+  &quot;37&quot; = &quot;POLITICAL MILITIA VERSUS CIVILIANS&quot;,
+  &quot;38&quot; = &quot;POLITICAL MILITIA VERSUS OTHERS&quot;,
+  &quot;40&quot; = &quot;SOLE COMMUNAL MILITIA ACTION&quot;, 
+  &quot;44&quot; = &quot;COMMUNAL MILITIA VERSUS COMMUNAL MILITIA&quot;, 
+  &quot;45&quot; = &quot;COMMUNAL MILITIA VERSUS RIOTERS&quot;, 
+  &quot;46&quot; = &quot;COMMUNAL MILITIA VERSUS PROTESTERS&quot;, 
+  &quot;47&quot; = &quot;COMMUNAL MILITIA VERSUS CIVILIANS&quot;, 
+  &quot;48&quot; = &quot;COMMUNAL MILITIA VERSUS OTHER&quot;,&quot;50&quot; = &quot;SOLE RIOTER ACTION&quot;, 
+  &quot;55&quot; = &quot;RIOTERS VERSUS RIOTERS&quot;, &quot;56&quot; = &quot;RIOTERS VERSUS PROTESTERS&quot;, 
+  &quot;57&quot; = &quot;RIOTERS VERSUS CIVILIANS&quot;, &quot;58&quot; = &quot;RIOTERS VERSUS OTHERS&quot;, 
+  &quot;60&quot; = &quot;SOLE PROTESTER ACTION&quot;, &quot;66&quot; = &quot;PROTESTERS VERSUS PROTESTERS&quot;, 
+  &quot;67&quot; = &quot;PROTESTERS VERSUS CIVILIANS&quot;, &quot;68&quot; = &quot;PROTESTERS VERSUS OTHER&quot;, 
+  &quot;70&quot; = &quot;SOLE CIVILIANS&quot;, &quot;77&quot; = &quot;CIVILIANS VERSUS CIVILIANS&quot;, 
+  &quot;78&quot; = &quot;OTHER ACTOR VERSUS CIVILIANS&quot;, &quot;80&quot; = &quot;SOLE OTHER ACTION&quot;, 
+  &quot;88&quot; = &quot;OTHERS VERSUS OTHERS&quot;)
+
+acled$interaction &lt;- lut3[acled$interaction]
+head(acled$interaction)</code></pre>
+<pre><code>## [1] &quot;COMMUNAL MILITIA VERSUS COMMUNAL MILITIA&quot;
+## [2] &quot;MILITARY VERSUS COMMUNAL MILITIA&quot;        
+## [3] &quot;SOLE RIOTER ACTION&quot;                      
+## [4] &quot;RIOTERS VERSUS RIOTERS&quot;                  
+## [5] &quot;SOLE PROTESTER ACTION&quot;                   
+## [6] &quot;SOLE PROTESTER ACTION&quot;</code></pre>
+<pre class="r"><code># convert LONGITUDE and LATITUDE columns to Numeric
+acled$longitude &lt;- as.numeric(acled$longitude)
+acled$latitude &lt;- as.numeric(acled$latitude)
+
+# convert actor1 and actor2 to factor
+acled$actor1 &lt;- as.factor(acled$actor1)
+acled$actor2 &lt;- as.factor(acled$actor2)
+
+# the event date column is in DD/MM/YYYY format. assign this to the dataset 
+# using dmy() function
+head(acled$event_date)</code></pre>
+<pre><code>## [1] &quot;30 December 2017&quot; &quot;30 December 2017&quot; &quot;29 December 2017&quot; &quot;29 December 2017&quot;
+## [5] &quot;29 December 2017&quot; &quot;29 December 2017&quot;</code></pre>
+<pre class="r"><code>acled$event_date &lt;- lubridate::dmy(acled$event_date)
+head(acled$event_date)</code></pre>
+<pre><code>## [1] &quot;2017-12-30&quot; &quot;2017-12-30&quot; &quot;2017-12-29&quot; &quot;2017-12-29&quot; &quot;2017-12-29&quot;
+## [6] &quot;2017-12-29&quot;</code></pre>
+<pre class="r"><code># for further analysis and aggregating data on monthly basis, mutate the 
+# dataset to add a column for month
+acled %&lt;&gt;% dplyr::mutate(month = lubridate::month(acled$event_date))
+
+# sum by lat/long and month
+acled$longlat &lt;- paste(acled$longitude, acled$latitude, sep = &quot;, &quot;)
+
+acled$ym &lt;- zoo::as.yearmon(
+  paste(acled$year, acled$month, sep = &quot;-&quot;), &quot;%Y-%m&quot;)
+
+#acled_dissag&lt;-acled %&gt;% 
+#  dplyr::group_by(longitude, latitude, ym, event_type) %&gt;% 
+#  dplyr::summarise(fatalities = sum(fatalities, na.rm = TRUE))</code></pre>
 <p>We look for potential duplicate events in the data by inspecting instances where all the main variables display the same value, and drop redundant observations. This process lead us to drop 31 observations (the total number of observations in ACLED is then 4071).</p>
+<pre class="r"><code># inspecting duplicates
+duplic &lt;- acled[
+  duplicated(
+    acled[ , c(
+      &quot;event_date&quot;, &quot;year&quot;, &quot;time_precision&quot;, &quot;event_type&quot;, 
+      &quot;sub_event_type&quot;,  &quot;actor1&quot;, &quot;assoc_actor_1&quot;, &quot;inter1&quot;, &quot;actor2&quot;, 
+      &quot;assoc_actor_2&quot;, &quot;inter2&quot;,  &quot;interaction&quot;, &quot;region&quot;, &quot;country&quot;, 
+      &quot;admin1&quot;, &quot;admin2&quot;, &quot;admin3&quot;, &quot;location&quot;, &quot;latitude&quot;, &quot;longitude&quot;, 
+      &quot;geo_precision&quot;)]),]
+
+nrow(duplic)</code></pre>
+<pre><code>## [1] 31</code></pre>
+<pre class="r"><code>#duplic2 &lt;- acled[
+#  !duplicated(
+#    acled[ , c(&quot;event_date&quot;, &quot;year&quot;, &quot;time_precision&quot;, &quot;event_type&quot;, 
+#               &quot;sub_event_type&quot;,  &quot;actor1&quot;, &quot;assoc_actor_1&quot;, &quot;inter1&quot;, 
+#               &quot;actor2&quot;, &quot;assoc_actor_2&quot;, &quot;inter2&quot;,  &quot;interaction&quot;, 
+#               &quot;region&quot;, &quot;country&quot;, &quot;admin1&quot;, &quot;admin2&quot;, &quot;admin3&quot;, 
+#               &quot;location&quot;, &quot;latitude&quot;, &quot;longitude&quot;, &quot;geo_precision&quot;)]),]
+
+#compare &lt;- setdiff(duplic2, duplic)
+
+# deleting duplicates
+acled &lt;- acled[
+  !duplicated(
+    acled[ , c(
+      &quot;event_date&quot;, &quot;year&quot;, &quot;time_precision&quot;, &quot;event_type&quot;, 
+      &quot;sub_event_type&quot;,  &quot;actor1&quot;, &quot;assoc_actor_1&quot;, &quot;inter1&quot;, &quot;actor2&quot;, 
+      &quot;assoc_actor_2&quot;, &quot;inter2&quot;,  &quot;interaction&quot;, &quot;region&quot;, &quot;country&quot;, 
+      &quot;admin1&quot;, &quot;admin2&quot;, &quot;admin3&quot;, &quot;location&quot;, &quot;latitude&quot;, &quot;longitude&quot;, 
+      &quot;geo_precision&quot;)]),]</code></pre>
 <p>Moreover, the structure of the ACLED dataset is in long format, meaning that event spanning multiple days are registered as separate observations. This is in contrast with other conflict event data sources, where one event corresponds to one observation. For this reason, we try to reshape the ACLED dataset into wide format. We do this by looking for events occurring on consecutive days in the same location and involving the same actors, and transforming them into the same unique event.</p>
 <p>After reshaping, the number of observations decreases further to 3700 observations.</p>
+<pre class="r"><code># reshaping from long to wide
+data.table::setDT(acled)
+
+acled[, Date := as.Date(event_date, format = &#39;%Y/%m/%d&#39;)]
+
+acled_old &lt;- acled #keep old data
+
+acled &lt;- acled_old[
+  order(longlat, event_type, actor1, actor2, year, time_precision, 
+        sub_event_type, assoc_actor_1, inter1, assoc_actor_2, inter2, 
+        interaction, region,  country, admin1,  admin2, admin3, location, 
+        latitude, longitude, geo_precision, fatalities, Date), 
+  .(start = min(Date), end = max(Date)), 
+          by = .(longlat, event_type, actor1, actor2, year, time_precision, 
+                 sub_event_type, assoc_actor_1, inter1, assoc_actor_2, 
+                 inter2, interaction, region,  country, admin1,  admin2, 
+                 admin3, location, latitude, longitude, geo_precision, 
+                 fatalities, 
+                 g = cumsum(c(0, diff(Date)) != 1))]
+
+nrow(acled)</code></pre>
+<pre><code>## [1] 3700</code></pre>
 </div>
 </div>
 <div id="gtd" class="section level2" number="2.2">
@@ -482,8 +651,93 @@ actor_tax &lt;- read.csv(paste0(fp_data, &quot;actor_tax.csv&quot;))</code></pre
 <li>Once you have received approval, download the data and store it in a folder called “GTD”.</li>
 </ol>
 <p>Subsetting the GTD dataset to years between 1997 and 2017 results in 109 observations.</p>
+<pre class="r"><code>gtd &lt;- read.csv(paste0(fp_data, &quot;/GTD/globalterrorismdb_0221dist.csv&quot;))
+
+gtd &lt;- subset(gtd, country_txt == &quot;Ethiopia&quot;)
+unique(gtd$iyear)</code></pre>
+<pre><code>##  [1] 1970 1971 1973 1974 1975 1976 1977 1978 1979 1983 1984 1985 1986 1987 1988
+## [16] 1989 1990 1991 1992 1994 1995 1996 1997 1999 2000 2002 2003 2004 2005 2006
+## [31] 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019</code></pre>
+<pre class="r"><code># Subset to 1996+ otherwise you get points outside of (current) Ethiopia
+gtd &lt;- subset(gtd, iyear &gt;= 1997)
+gtd &lt;- subset(gtd, iyear &lt;= 2017) # possible to extend
+
+nrow(gtd)</code></pre>
+<pre><code>## [1] 109</code></pre>
 <p>We also look for potential duplicate observations by inspecting instances where the main variables have the same value, and drop 8 duplicated events, leading to a total of 101 observations.</p>
+<pre class="r"><code># inspecting duplicates
+duplic &lt;- gtd[
+  duplicated(
+    gtd[ , c(
+      &quot;iyear&quot;, &quot;imonth&quot;, &quot;iday&quot;, &quot;approxdate&quot;,  &quot;extended&quot;, &quot;resolution&quot;, 
+      &quot;country&quot;, &quot;country_txt&quot;, &quot;region&quot;,  &quot;region_txt&quot;, &quot;provstate&quot;, 
+      &quot;city&quot;, &quot;location&quot;, &quot;latitude&quot;, &quot;longitude&quot;, &quot;specificity&quot;, 
+      &quot;attacktype1&quot;, &quot;attacktype1_txt&quot;, &quot;attacktype2&quot;, &quot;attacktype2_txt&quot;, 
+      &quot;attacktype3&quot;, &quot;attacktype3_txt&quot;, &quot;targtype1&quot;, &quot;targtype1_txt&quot;, 
+      &quot;targsubtype1&quot;, &quot;targsubtype1_txt&quot;, &quot;corp1&quot;, &quot;target1&quot;, &quot;natlty1&quot;, 
+      &quot;natlty1_txt&quot;, &quot;targtype2&quot;, &quot;targtype2_txt&quot;, &quot;targsubtype2&quot;, 
+      &quot;targsubtype2_txt&quot;, &quot;corp2&quot;, &quot;target2&quot;, &quot;natlty2&quot;, &quot;natlty2_txt&quot;, 
+      &quot;targtype3&quot;, &quot;targtype3_txt&quot;, &quot;targsubtype3&quot;, &quot;targsubtype3_txt&quot;, 
+      &quot;corp3&quot;, &quot;target3&quot;, &quot;natlty3&quot;, &quot;natlty3_txt&quot;, &quot;gname&quot;, &quot;gsubname&quot;, 
+      &quot;gname2&quot;, &quot;gsubname2&quot;, &quot;gname3&quot;, &quot;gsubname3&quot;, &quot;motive&quot;, 
+      &quot;guncertain1&quot;, &quot;guncertain2&quot;, &quot;guncertain3&quot;, &quot;individual&quot;, &quot;nperps&quot;, 
+      &quot;nperpcap&quot;, &quot;claimed&quot;, &quot;claimmode&quot;, &quot;claimmode_txt&quot;, &quot;claim2&quot;, 
+      &quot;claimmode2&quot;, &quot;claimmode2_txt&quot;, &quot;claim3&quot;, &quot;claimmode3&quot;, 
+      &quot;claimmode3_txt&quot;, &quot;compclaim&quot;, &quot;weaptype1&quot;, &quot;weaptype1_txt&quot;, 
+      &quot;weapsubtype1&quot;, &quot;weapsubtype1_txt&quot;, &quot;weaptype2&quot;, &quot;weaptype2_txt&quot;, 
+      &quot;weapsubtype2&quot;, &quot;weapsubtype2_txt&quot;, &quot;weaptype3&quot;, &quot;weaptype3_txt&quot;, 
+      &quot;weapsubtype3&quot;, &quot;weapsubtype3_txt&quot;, &quot;weaptype4&quot;, &quot;weaptype4_txt&quot;, 
+      &quot;weapsubtype4&quot;, &quot;weapsubtype4_txt&quot;, &quot;weapdetail&quot;, &quot;nkill&quot;, &quot;nkillus&quot;, 
+      &quot;nkillter&quot;, &quot;nwound&quot;, &quot;nwoundus&quot;, &quot;nwoundte&quot;, &quot;property&quot;, 
+      &quot;propextent&quot;, &quot;propextent_txt&quot;, &quot;propvalue&quot;, &quot;propcomment&quot;, 
+      &quot;ishostkid&quot;, &quot;nhostkid&quot;, &quot;nhostkidus&quot;, &quot;nhours&quot;, &quot;ndays&quot;)]),] 
+
+
+# deleting duplicates
+gtd &lt;- gtd[
+  !duplicated(
+    gtd[ , c(
+      &quot;iyear&quot;, &quot;imonth&quot;, &quot;iday&quot;, &quot;approxdate&quot;,  &quot;extended&quot;, &quot;resolution&quot;, 
+      &quot;country&quot;, &quot;country_txt&quot;, &quot;region&quot;,  &quot;region_txt&quot;, &quot;provstate&quot;, 
+      &quot;city&quot;, &quot;location&quot;, &quot;latitude&quot;, &quot;longitude&quot;, &quot;specificity&quot;, 
+      &quot;attacktype1&quot;, &quot;attacktype1_txt&quot;, &quot;attacktype2&quot;, &quot;attacktype2_txt&quot;, 
+      &quot;attacktype3&quot;, &quot;attacktype3_txt&quot;, &quot;targtype1&quot;, &quot;targtype1_txt&quot;, 
+      &quot;targsubtype1&quot;, &quot;targsubtype1_txt&quot;, &quot;corp1&quot;, &quot;target1&quot;, &quot;natlty1&quot;, 
+      &quot;natlty1_txt&quot;, &quot;targtype2&quot;, &quot;targtype2_txt&quot;, &quot;targsubtype2&quot;, 
+      &quot;targsubtype2_txt&quot;, &quot;corp2&quot;, &quot;target2&quot;, &quot;natlty2&quot;, &quot;natlty2_txt&quot;, 
+      &quot;targtype3&quot;, &quot;targtype3_txt&quot;, &quot;targsubtype3&quot;, &quot;targsubtype3_txt&quot;, 
+      &quot;corp3&quot;, &quot;target3&quot;, &quot;natlty3&quot;, &quot;natlty3_txt&quot;, &quot;gname&quot;, &quot;gsubname&quot;, 
+      &quot;gname2&quot;, &quot;gsubname2&quot;, &quot;gname3&quot;, &quot;gsubname3&quot;, &quot;motive&quot;, 
+      &quot;guncertain1&quot;, &quot;guncertain2&quot;, &quot;guncertain3&quot;, &quot;individual&quot;, &quot;nperps&quot;, 
+      &quot;nperpcap&quot;, &quot;claimed&quot;, &quot;claimmode&quot;, &quot;claimmode_txt&quot;, &quot;claim2&quot;, 
+      &quot;claimmode2&quot;, &quot;claimmode2_txt&quot;, &quot;claim3&quot;, &quot;claimmode3&quot;, 
+      &quot;claimmode3_txt&quot;, &quot;compclaim&quot;, &quot;weaptype1&quot;, &quot;weaptype1_txt&quot;, 
+      &quot;weapsubtype1&quot;, &quot;weapsubtype1_txt&quot;, &quot;weaptype2&quot;, &quot;weaptype2_txt&quot;, 
+      &quot;weapsubtype2&quot;, &quot;weapsubtype2_txt&quot;, &quot;weaptype3&quot;, &quot;weaptype3_txt&quot;, 
+      &quot;weapsubtype3&quot;, &quot;weapsubtype3_txt&quot;, &quot;weaptype4&quot;, &quot;weaptype4_txt&quot;, 
+      &quot;weapsubtype4&quot;, &quot;weapsubtype4_txt&quot;, &quot;weapdetail&quot;, &quot;nkill&quot;, &quot;nkillus&quot;, 
+      &quot;nkillter&quot;, &quot;nwound&quot;, &quot;nwoundus&quot;, &quot;nwoundte&quot;, &quot;property&quot;, 
+      &quot;propextent&quot;, &quot;propextent_txt&quot;, &quot;propvalue&quot;, &quot;propcomment&quot;, 
+      &quot;ishostkid&quot;, &quot;nhostkid&quot;, &quot;nhostkidus&quot;, &quot;nhours&quot;, &quot;ndays&quot;)]),]
+
+duplic$eventid</code></pre>
+<pre><code>## [1] 199704120009 201604150018 201604150019 201604150021 201604150022
+## [6] 201604150023 201604150024</code></pre>
+<pre class="r"><code># another event that is actually a duplicate, but has been inserted twice 
+# with slightly different coding:
+gtd &lt;- gtd[!(gtd$eventid == 199702100009),]</code></pre>
 <p>To allow for the merging process with <code>meltt</code>, we also drop entries where geo-tagged or date information is missing or incomplete, leading to 99 observations.</p>
+<pre class="r"><code># convert dates to class date. rename variables to match taxonomy names. 
+# drop entries missing date information. drop entries missing geo-tagged 
+# information.
+gtd %&lt;&gt;%  
+  dplyr::mutate(date = as.Date(paste0(iyear, &quot;-&quot;, imonth, &quot;-&quot;, iday))) %&gt;% 
+  dplyr::filter(!is.na(date)) %&gt;% 
+  dplyr::filter(!is.na(longitude)) %&gt;%  
+  as.data.frame(.)
+
+nrow(gtd)</code></pre>
+<pre><code>## [1] 99</code></pre>
 <pre class="r"><code># remove intermediaries
 rm(duplic)</code></pre>
 </div>
@@ -499,8 +753,67 @@ rm(duplic)</code></pre>
 <li>Save the data in a folder called <code>UCDP GED/ged201-RData</code>.</li>
 </ol>
 <p>Subsetting the GED dataset to years between 1997 and 2017 produces 1659 observations.</p>
+<pre class="r"><code>load(paste0(fp_data, &quot;/UCDP GED/ged201-RData/ged201.RData&quot;))
+ged &lt;- subset(ged201, country == &quot;Ethiopia&quot;)
+unique(ged$year)</code></pre>
+<pre><code>##  [1] 1989 1990 1991 1993 1994 1996 1999 1995 1998 2000 2001 2002 2003 2004 2005
+## [16] 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 1992 1997
+## [31] 2019</code></pre>
+<pre class="r"><code># Subset to 1996+ otherwise you get points outside of (current) Ethiopia
+ged &lt;- subset(ged, year &gt;= 1997)
+ged &lt;- subset(ged, year &lt;= 2017) # possible to extend</code></pre>
 <p>Again, we look for potential duplicated events by analyzing observations that display the same value for the main variables, and drop 1 duplicated event, for a total of 1658 observations.</p>
+<pre class="r"><code># inspecting duplicates
+duplic &lt;- ged[
+  duplicated(
+    ged[ , c(
+      &quot;year&quot;, &quot;active_year&quot;, &quot;code_status&quot;, &quot;type_of_violence&quot;, 
+      &quot;conflict_dset_id&quot;, &quot;conflict_new_id&quot;, &quot;conflict_name&quot;, 
+      &quot;dyad_dset_id&quot;, &quot;dyad_new_id&quot;, &quot;dyad_name&quot;, &quot;side_a_dset_id&quot;, 
+      &quot;side_a_new_id&quot;, &quot;side_a&quot;, &quot;side_b_dset_id&quot;, &quot;side_b_new_id&quot;, 
+      &quot;side_b&quot;, &quot;number_of_sources&quot;, &quot;source_article&quot;, &quot;source_office&quot;,
+      &quot;source_date&quot;, &quot;source_headline&quot;, &quot;source_original&quot;, &quot;where_prec&quot;, 
+      &quot;where_coordinates&quot;, &quot;where_description&quot;,  &quot;adm_1&quot;, &quot;adm_2&quot;, 
+      &quot;latitude&quot;, &quot;longitude&quot;, &quot;geom_wkt&quot;, &quot;priogrid_gid&quot;, &quot;country&quot;, 
+      &quot;country_id&quot;, &quot;region&quot;, &quot;event_clarity&quot;, &quot;date_prec&quot;, &quot;date_start&quot;, 
+      &quot;date_end&quot;, &quot;deaths_a&quot;, &quot;deaths_b&quot;, &quot;deaths_civilians&quot;, 
+      &quot;deaths_unknown&quot;, &quot;best&quot;, &quot;high&quot;, &quot;low&quot;, &quot;gwnoa&quot;, &quot;gwnob&quot;)]),]
+ 
+# deleting duplicates
+# inspecting duplicates
+ged &lt;- ged[
+  !duplicated(
+    ged[ , c(
+      &quot;year&quot;, &quot;active_year&quot;, &quot;code_status&quot;, &quot;type_of_violence&quot;, 
+      &quot;conflict_dset_id&quot;, &quot;conflict_new_id&quot;, &quot;conflict_name&quot;, 
+      &quot;dyad_dset_id&quot;, &quot;dyad_new_id&quot;, &quot;dyad_name&quot;, &quot;side_a_dset_id&quot;, 
+      &quot;side_a_new_id&quot;, &quot;side_a&quot;, &quot;side_b_dset_id&quot;, &quot;side_b_new_id&quot;, 
+      &quot;side_b&quot;, &quot;number_of_sources&quot;, &quot;source_article&quot;, &quot;source_office&quot;,
+      &quot;source_date&quot;, &quot;source_headline&quot;, &quot;source_original&quot;, &quot;where_prec&quot;, 
+      &quot;where_coordinates&quot;, &quot;where_description&quot;,  &quot;adm_1&quot;, &quot;adm_2&quot;, 
+      &quot;latitude&quot;, &quot;longitude&quot;, &quot;geom_wkt&quot;, &quot;priogrid_gid&quot;, &quot;country&quot;, 
+      &quot;country_id&quot;, &quot;region&quot;, &quot;event_clarity&quot;, &quot;date_prec&quot;, &quot;date_start&quot;, 
+      &quot;date_end&quot;, &quot;deaths_a&quot;, &quot;deaths_b&quot;, &quot;deaths_civilians&quot;, 
+      &quot;deaths_unknown&quot;, &quot;best&quot;, &quot;high&quot;, &quot;low&quot;, &quot;gwnoa&quot;, &quot;gwnob&quot;)]),]</code></pre>
 <p>Following <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span> (Appendix, p.24), we swap the primary actor (side_a) and the secondary actor (side_b) for all events coded as state-based violence (type of violence = 1).</p>
+<pre class="r"><code># following Donnay et al. 2019 Appendix, p.24, change side_a in side_b for 
+# type of violence = 1
+unique(paste(ged$side_a[ged$type_of_violence == 1], 
+             ged$side_b[ged$type_of_violence == 1], sep = &quot;, &quot;))</code></pre>
+<pre><code>## [1] &quot;Government of Ethiopia, AIAI&quot;                 
+## [2] &quot;Government of Ethiopia, ONLF&quot;                 
+## [3] &quot;Government of Somalia, Al-Shabaab&quot;            
+## [4] &quot;Government of Eritrea, Government of Ethiopia&quot;
+## [5] &quot;Government of Ethiopia, OLF&quot;                  
+## [6] &quot;Government of Sudan, SPLM/A-North&quot;</code></pre>
+<pre class="r"><code>unique(ged$side_a[ged$type_of_violence == 1])</code></pre>
+<pre><code>## [1] &quot;Government of Ethiopia&quot; &quot;Government of Somalia&quot;  &quot;Government of Eritrea&quot; 
+## [4] &quot;Government of Sudan&quot;</code></pre>
+<pre class="r"><code>unique(ged$side_b[ged$type_of_violence == 1])</code></pre>
+<pre><code>## [1] &quot;AIAI&quot;                   &quot;ONLF&quot;                   &quot;Al-Shabaab&quot;            
+## [4] &quot;Government of Ethiopia&quot; &quot;OLF&quot;                    &quot;SPLM/A-North&quot;</code></pre>
+<pre class="r"><code>ged$side_a[ged$type_of_violence == 1] &lt;- 
+  ged$side_b[ged$type_of_violence == 1]</code></pre>
 </div>
 </div>
 <div id="scad" class="section level2" number="2.4">
@@ -513,7 +826,42 @@ rm(duplic)</code></pre>
 <li>Save the dataset in a folder called <code>UCDP GED</code></li>
 </ol>
 <p>Subsetting the SCAD dataset to years between 1997 and 2017 results in 175 observations.</p>
+<pre class="r"><code>scad &lt;- fread(
+  paste0(fp_data,
+         &quot;SCAD/SCAD2018Africa_Final.csv/SCAD2018Africa_Final.csv&quot;))
+
+scad &lt;- subset(scad, countryname == &quot;Ethiopia&quot;)
+
+unique(scad$styr)</code></pre>
+<pre><code>##  [1] 1964 1976 1987 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000
+## [16] 2001 2002 2004 2005 2006 2007 2008 2010 2011 2012 2013 2014 2015 2016 2017</code></pre>
+<pre class="r"><code># Subset to 1996+ otherwise you get points outside of (current) Ethiopia
+scad &lt;- subset(scad, styr &gt;= 1997)
+scad &lt;- subset(scad, eyr &lt;= 2017)</code></pre>
 <p>As for the previous datasets, we look for potential instances of duplicated events, but do not find any in the SCAD data.</p>
+<pre class="r"><code># inspecting duplicates
+duplic &lt;- scad[duplicated(scad[ , c(&quot;ccode&quot; , &quot;countryname&quot;,    
+&quot;startdate&quot;   , &quot;enddate&quot;   , &quot;duration&quot;    , &quot;stday&quot;      ,   
+&quot;stmo&quot;        , &quot;styr&quot;      , &quot;eday&quot;        , &quot;emo&quot;        ,   
+&quot;eyr&quot;         , &quot;etype&quot;     , &quot;escalation&quot;  , &quot;actor1&quot;     ,   
+&quot;actor2&quot;      , &quot;actor3&quot;    , &quot;target1&quot;     , &quot;target2&quot;    ,   
+&quot;cgovtarget&quot;  , &quot;rgovtarget&quot;, &quot;npart&quot;       , &quot;ndeath&quot;     ,   
+&quot;repress&quot;     , &quot;elocal&quot;    , &quot;ilocal&quot;      , &quot;sublocal&quot;   ,   
+&quot;locnum&quot;      , &quot;gislocnum&quot; , &quot;issue1&quot;      , &quot;issue2&quot;     ,   
+&quot;issue3&quot;      , &quot;female_event&quot;, &quot;lgtbq_issue&quot;,  &quot;acd_questionable&quot;, 
+&quot;latitude&quot;    , &quot;longitude&quot; , &quot;geo_comments&quot;, &quot;location_precision&quot;)]),]
+
+# deleting duplicates
+scad &lt;- scad[!duplicated(scad[ , c(&quot;ccode&quot; , &quot;countryname&quot;,    
+&quot;startdate&quot;   , &quot;enddate&quot;   , &quot;duration&quot;    , &quot;stday&quot;      ,   
+&quot;stmo&quot;        , &quot;styr&quot;      , &quot;eday&quot;        , &quot;emo&quot;        ,   
+&quot;eyr&quot;         , &quot;etype&quot;     , &quot;escalation&quot;  , &quot;actor1&quot;     ,   
+&quot;actor2&quot;      , &quot;actor3&quot;    , &quot;target1&quot;     , &quot;target2&quot;    ,   
+&quot;cgovtarget&quot;  , &quot;rgovtarget&quot;, &quot;npart&quot;       , &quot;ndeath&quot;     ,   
+&quot;repress&quot;     , &quot;elocal&quot;    , &quot;ilocal&quot;      , &quot;sublocal&quot;   ,   
+&quot;locnum&quot;      , &quot;gislocnum&quot; , &quot;issue1&quot;      , &quot;issue2&quot;     ,   
+&quot;issue3&quot;      , &quot;female_event&quot;, &quot;lgtbq_issue&quot;,  &quot;acd_questionable&quot;, 
+&quot;latitude&quot;    , &quot;longitude&quot; , &quot;geo_comments&quot;, &quot;location_precision&quot;)]),]</code></pre>
 <pre class="r"><code># remove intermediaries
 rm(duplic)</code></pre>
 </div>
@@ -523,27 +871,576 @@ rm(duplic)</code></pre>
 <h1><span class="header-section-number">3</span> Developing taxonomies</h1>
 <div id="actor-taxonomy" class="section level2" number="3.1">
 <h2><span class="header-section-number">3.1</span> Actor taxonomy</h2>
-<p>We develop the actor taxonomies separately for each conflict dataset. The initial recodng process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span> to standardise actors across datasets. This can be found in the file <code>Ethiopia_merging_notes_suppinfo.doc</code>.</p>
+<p>We develop the actor taxonomies separately for each conflict dataset. The initial recoding process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span> to standardise actors across datasets. This can be found in the file <code>summary.rmd</code>.</p>
 <div id="acled-1" class="section level3" number="3.1.1">
 <h3><span class="header-section-number">3.1.1</span> ACLED</h3>
+<pre class="r"><code>####ACLED####
+# Create dataframe with data.source and base.categories
+base.categories &lt;- levels(acled$actor1)
+data.source &lt;- rep(&quot;acled&quot;, length(base.categories))
+acled_actor_tax &lt;- as.data.frame(cbind(data.source, base.categories))
+
+head(acled_actor_tax)</code></pre>
+<pre><code>##   data.source                                             base.categories
+## 1       acled                        Ablek Ad&#39;ali Clan Militia (Ethiopia)
+## 2       acled                      ADFM: Amhara Democratic Force Movement
+## 3       acled                              Afar Ethnic Militia (Ethiopia)
+## 4       acled AGUDM: Patriotic Ginbot 7 for Unity and Democratic Movement
+## 5       acled                                  AIAI: Al-Itihad Al-Islamia
+## 6       acled                                                  Al Shabaab</code></pre>
+<pre class="r"><code># Need to create variable actor_level_1_txt starting from base.categories
+# government, violent groups, civilian groups, civilians, movement groups
+# there is not civilian groups here
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Government&quot;, acled_actor_tax$base.categories)] &lt;- &quot;government&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Military&quot;, acled_actor_tax$base.categories)] &lt;- &quot;government&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Police&quot;, acled_actor_tax$base.categories)] &lt;- &quot;government&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Militia&quot;, acled_actor_tax$base.categories)] &lt;- &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Rioters&quot;, acled_actor_tax$base.categories)] &lt;- &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Armed Group&quot;, acled_actor_tax$base.categories)] &lt;- &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Civilians&quot;, acled_actor_tax$base.categories)] &lt;- &quot;civilians&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Protesters&quot;, acled_actor_tax$base.categories)] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Party&quot;, acled_actor_tax$base.categories)] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  grepl(&quot;Movement&quot;, acled_actor_tax$base.categories)] &lt;- &quot;movement groups&quot;
+
+# A few have not been categorised, so do it manually
+acled_actor_tax$base.categories[
+  is.na(acled_actor_tax$actor_level_1_txt)]</code></pre>
+<pre><code>##  [1] &quot;AIAI: Al-Itihad Al-Islamia&quot;                              
+##  [2] &quot;Al Shabaab&quot;                                              
+##  [3] &quot;Amhara Tegadlo&quot;                                          
+##  [4] &quot;ARDUF: Afar Revolutionary Democratic Unity Front&quot;        
+##  [5] &quot;EPPF: Ethiopian Peoples Patriotic Front&quot;                 
+##  [6] &quot;EPRDF: Ethiopian People&#39;s Revolutionary Democratic Front&quot;
+##  [7] &quot;EUFF: Ethiopian Unity and Freedom Force&quot;                 
+##  [8] &quot;MEDREK: Ethiopian Federal Democratic Unity Forum&quot;        
+##  [9] &quot;OLF: Oromo Liberation Front&quot;                             
+## [10] &quot;ONLF: Ogaden National Liberation Front&quot;                  
+## [11] &quot;RRA: Rahanweyn Resistance Army&quot;                          
+## [12] &quot;RSADO: Red Sea Afar Democratic Organisation&quot;             
+## [13] &quot;TPLF: Tigray People&#39;s Liberation Front&quot;                  
+## [14] &quot;UWSLF: United Western Somali Liberation Front&quot;</code></pre>
+<pre class="r"><code>acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == &quot;AIAI: Al-Itihad Al-Islamia&quot;] &lt;- 
+  &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == &quot;Al-Shabiba Al-Islamiyah&quot;] &lt;- 
+  &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == &quot;Al Shabaab&quot;] &lt;- 
+  &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == &quot;Amhara Tegadlo&quot;] &lt;- 
+  &quot;movement groups&quot;
+
+# These are more difficult to categorise
+acled_actor_tax$base.categories[
+  is.na(acled_actor_tax$actor_level_1_txt)]</code></pre>
+<pre><code>##  [1] &quot;ARDUF: Afar Revolutionary Democratic Unity Front&quot;        
+##  [2] &quot;EPPF: Ethiopian Peoples Patriotic Front&quot;                 
+##  [3] &quot;EPRDF: Ethiopian People&#39;s Revolutionary Democratic Front&quot;
+##  [4] &quot;EUFF: Ethiopian Unity and Freedom Force&quot;                 
+##  [5] &quot;MEDREK: Ethiopian Federal Democratic Unity Forum&quot;        
+##  [6] &quot;OLF: Oromo Liberation Front&quot;                             
+##  [7] &quot;ONLF: Ogaden National Liberation Front&quot;                  
+##  [8] &quot;RRA: Rahanweyn Resistance Army&quot;                          
+##  [9] &quot;RSADO: Red Sea Afar Democratic Organisation&quot;             
+## [10] &quot;TPLF: Tigray People&#39;s Liberation Front&quot;                  
+## [11] &quot;UWSLF: United Western Somali Liberation Front&quot;</code></pre>
+<pre class="r"><code>acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;ARDUF: Afar Revolutionary Democratic Unity Front&quot;] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;EDU: Front of the Ethiopian Democratic Union Forces&quot;] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;EPPF: Ethiopian Peoples Patriotic Front&quot;] &lt;- &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;EPRDF: Ethiopian Peoples Revolutionary Democratic Front&quot;] &lt;- 
+  &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;EPRDF: Ethiopian People&#39;s Revolutionary Democratic Front&quot;] &lt;- 
+  &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;EUFF: Ethiopian Unity and Freedom Force&quot;] &lt;- &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;MEDREK: Ethiopian Federal Democratic Unity Forum&quot;] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;OLF: Oromo Liberation Front&quot;] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;ONLF: Ogaden National Liberation Front&quot;] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;OPDO: Oromo Peoples Democratic Organization&quot;] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;RRA: Rahanweyn Resistance Army&quot;] &lt;- &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;RSADO: Red Sea Afar Democratic Organisation&quot;] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;SLF: Sidama Liberation Front&quot;] &lt;- &quot;violent groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;TPLF: Tigray Peoples Liberation Front&quot;] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;TPLF: Tigray People&#39;s Liberation Front&quot;] &lt;- &quot;movement groups&quot;
+
+acled_actor_tax$actor_level_1_txt[
+  acled_actor_tax$base.categories == 
+    &quot;UWSLF: United Western Somali Liberation Front&quot;] &lt;- &quot;violent groups&quot;
+
+acled_actor_tax$base.categories[
+  is.na(acled_actor_tax$actor_level_1_txt)]</code></pre>
+<pre><code>## character(0)</code></pre>
+<pre class="r"><code># Need to create variable actor_level_2_txt starting from actor_level_1_txt
+# government and violent groups are violent groups, the others are nonviolent 
+# groups
+acled_actor_tax$actor_level_2_txt &lt;- &quot;nonviolent groups&quot;
+
+acled_actor_tax$actor_level_2_txt[
+  acled_actor_tax$actor_level_1_txt == &quot;government&quot; |
+    acled_actor_tax$actor_level_1_txt == &quot;violent groups&quot;] &lt;- &quot;violent groups&quot;</code></pre>
+<pre class="r"><code># checking that ACLED&#39;s actor taxonomy covers all actors
+acled_actor &lt;- acled %&gt;% 
+  dplyr::left_join(
+    acled_actor_tax, by = c(&quot;actor1&quot; = &quot;base.categories&quot;)) %&gt;% 
+  dplyr::select(actor1, actor2, actor_level_1_txt, actor_level_2_txt)
+
+# looking for missing values (all outputs should be FALSE)
+apply(acled_actor, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##            actor1            actor2 actor_level_1_txt actor_level_2_txt 
+##             FALSE             FALSE             FALSE             FALSE</code></pre>
 </div>
 <div id="ged-1" class="section level3" number="3.1.2">
 <h3><span class="header-section-number">3.1.2</span> GED</h3>
+<pre class="r"><code>####GED####
+# Create dataframe with data.source and base.categories
+base.categories &lt;- unique(ged$side_a)
+data.source &lt;- rep(&quot;ged&quot;, length(base.categories))
+ged_actor_tax &lt;- as.data.frame(cbind(data.source,base.categories))
+
+head(ged_actor_tax)</code></pre>
+<pre><code>##   data.source        base.categories
+## 1         ged                   AIAI
+## 2         ged                   ONLF
+## 3         ged             Al-Shabaab
+## 4         ged Government of Ethiopia
+## 5         ged                    OLF
+## 6         ged    Government of Kenya</code></pre>
+<pre class="r"><code># Need to create variable actor_level_1_txt starting from base.categories
+# all non-state are violent groups, otherwise government
+ged_actor_tax$actor_level_1_txt &lt;- &quot;violent groups&quot;
+
+ged_actor_tax$actor_level_1_txt[
+  grepl(&quot;Government&quot;, ged_actor_tax$base.categories)] &lt;- &quot;government&quot;
+
+# Need to create variable actor_level_2_txt starting from actor_level_1_txt
+# all are violent groups Donnay et al. Appendix p.22
+ged_actor_tax$actor_level_2_txt &lt;- &quot;violent groups&quot;
+
+# checking that GED&#39;s actor taxonomy covers all actors
+ged_actor &lt;- ged %&gt;% 
+  dplyr::left_join(ged_actor_tax, by = c(&quot;side_a&quot; = &quot;base.categories&quot;)) %&gt;% 
+  dplyr::select(side_a, side_b, actor_level_1_txt, actor_level_2_txt)
+
+# looking for missing values
+apply(ged_actor, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##            side_a            side_b actor_level_1_txt actor_level_2_txt 
+##             FALSE             FALSE             FALSE             FALSE</code></pre>
 </div>
 <div id="scad-1" class="section level3" number="3.1.3">
 <h3><span class="header-section-number">3.1.3</span> SCAD</h3>
+<pre class="r"><code>####SCAD####
+# Create dataframe with data.source and base.categories
+base.categories &lt;- unique(as.character(scad$actor1))
+data.source &lt;- rep(&quot;scad&quot;, length(base.categories))
+scad_actor_tax &lt;- as.data.frame(cbind(data.source,base.categories))
+
+# Need to create variable actor_level_1_txt starting from base.categories
+# government, violent groups, civilian groups, civilians, movement groups, 
+# religious groups
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;students&quot;] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Ethiopians&quot;] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;taxi drivers&quot;] &lt;- &quot;civilian groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;demonstrators&quot;] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==
+    &quot;Demonstrators angry over the deaths Irreecha festival attendees&quot;] &lt;- 
+  &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Armed men&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;voters&quot;] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;journalists&quot;] &lt;- &quot;civilian groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;women&quot;] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Bandits&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;attackers&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;OLF&quot;] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;ONLF&quot;] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;al-Itahad al-Islami&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Al-Itihad Al-Islamiya&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  grepl(&quot;opposition&quot;,scad_actor_tax$base.categories)] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  grepl(&quot;tribe&quot;,tolower(scad_actor_tax$base.categories))] &lt;- &quot;civilian groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Oromo ethnic group&quot;] &lt;- &quot;civilian groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==
+    &quot;Ethiopian People&#39;s Revolutionary Democratic Front&quot;] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==
+    &quot;pro-government supporters&quot;] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  grepl(
+    &quot;protesters&quot;,
+    tolower(scad_actor_tax$base.categories))] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Gunmen&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  grepl(&quot;clan&quot;,scad_actor_tax$base.categories)] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Islamic youth&quot;] &lt;- &quot;religious groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;market traders&quot;] &lt;- &quot;civilian groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Christians&quot;] &lt;- &quot;religious groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Muslims&quot;] &lt;- &quot;religious groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;truckers&quot;] &lt;- &quot;civilian groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Shopkeepers&quot;] &lt;- &quot;civilian groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Soldiers&quot;] &lt;- &quot;government&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Security forces&quot;] &lt;- &quot;government&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Suspected security forces&quot;] &lt;- &quot;government&quot;
+scad_actor_tax$actor_level_1_txt[
+  grepl(&quot;Police&quot;,scad_actor_tax$base.categories)] &lt;- &quot;government&quot;
+scad_actor_tax$actor_level_1_txt[
+  grepl(&quot;gunmen&quot;,scad_actor_tax$base.categories)] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Anuak militants&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  grepl(&quot;bombers&quot;,scad_actor_tax$base.categories)] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Attackers&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Rebels&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Eritrean Refugees&quot;] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;South Sudanese refugees&quot;] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==
+    &quot;Participants in Irreecha religious festival&quot;] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  grepl(&quot;Students&quot;,scad_actor_tax$base.categories)] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Athletes&quot;] &lt;- &quot;civilian groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==
+    &quot;Bashir Isaac Abdulla, demonstration organizer&quot;] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==
+    &quot;Coalition for Unity and Democracy&quot;] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==
+    &quot;Government-sponsored march&quot;] &lt;- &quot;movement groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  grepl(&quot;Ethnic&quot;,scad_actor_tax$base.categories)] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Eritrean exiles&quot;] &lt;- &quot;civilians&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Unknown attackers&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==
+    &quot;Ogaden National Liberation Front&quot;] &lt;- &quot;movement groups&quot;
+
+# these categories are new:
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Cattle Herders&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Somali mob&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Oromo rioters&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Somali rioters&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Somali Rioters&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Security Forces&quot;] &lt;- &quot;government&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Ethiopian government&quot;] &lt;- &quot;government&quot;
+
+# looking into the unknowns:
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Unknown attackers&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Unknown armed men&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Unknown Bombers&quot;] &lt;- &quot;violent groups&quot;
+scad_actor_tax$actor_level_1_txt[
+  scad_actor_tax$base.categories==&quot;Unidentified assailants&quot;] &lt;- &quot;violent groups&quot;</code></pre>
+<pre class="r"><code># checking that SCAD&#39;s actor taxonomy covers all actors
+scad_actor &lt;- scad %&gt;% 
+  dplyr::left_join(
+    scad_actor_tax, by = c(&quot;actor1&quot; = &quot;base.categories&quot;)) %&gt;% 
+  dplyr::mutate(base.categories = actor1)
+
+# looking for missing values
+apply(scad_actor_tax, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##       data.source   base.categories actor_level_1_txt 
+##             FALSE             FALSE              TRUE</code></pre>
+<pre class="r"><code># There are further &quot;unknowns&quot; that need to be coded manually: to do so, we 
+# merge again with the original SCD data, and look  more precisely in the notes
+# for clues about the unknown actors
+scad_actor$actor_level_1_txt[
+  scad_actor$actor1==&quot;Unknown&quot; &amp; 
+    grepl(&quot;Gunmen&quot;,scad_actor$issuenote)] &lt;- &quot;violent groups&quot; 
+# in this case, we see that while the actor is unknown, there are &quot;gunmen&quot; 
+# driving an attack in the notes
+scad_actor$base.categories[
+  scad_actor$actor1==&quot;Unknown&quot; &amp; 
+    grepl(&quot;Gunmen&quot;,scad_actor$issuenote)] &lt;- &quot;Unknown gunmen&quot; 
+# we also edit the base.categories variable, as it will later be necessary to 
+# reconstruct the actor taxonomy
+scad$actor1[
+  scad$actor1==&quot;Unknown&quot; &amp; grepl(&quot;Gunmen&quot;,scad$issuenote)] &lt;- &quot;Unknown gunmen&quot; 
+# we also edit the original scad dataset to mirror these changes
+
+scad_actor$actor_level_1_txt[
+  scad_actor$actor1==&quot;unknown&quot; &amp; 
+    grepl(&quot;Violent clashes&quot;, scad_actor$issuenote)] &lt;- &quot;violent groups&quot;  
+# in this case, we see that while the actor is unknown, &quot;violent clashes&quot; are
+# described in the notes
+
+scad_actor$base.categories[
+  scad_actor$actor1==&quot;unknown&quot; &amp; 
+    grepl(&quot;Violent clashes&quot;, scad_actor$issuenote)] &lt;- &quot;Unknown violent clashes&quot; 
+# we also edit the base.categories variable, as it will later be necessary to 
+# reconstruct the actor taxonomy
+
+scad$actor1[
+  scad$actor1==&quot;unknown&quot; &amp; 
+    grepl(&quot;Violent clashes&quot;,scad$issuenote)] &lt;- &quot;Unknown violent clashes&quot; 
+# we also edit the original scad dataset to mirror these changes
+
+scad_actor$actor_level_1_txt[
+  scad_actor$actor1==&quot;Unknown&quot; &amp; 
+    grepl(&quot;grenade&quot;,scad_actor$issuenote)] &lt;- &quot;violent groups&quot;  
+# in this case, we see that while the actor is unknown, a grenade attack is 
+# described in the notes
+
+scad_actor$base.categories[
+  scad_actor$actor1==&quot;Unknown&quot; &amp; 
+    grepl(&quot;grenade&quot;,scad_actor$issuenote)] &lt;- &quot;Unknown attack&quot; 
+# we also edit the base.categories variable, as it will later be necessary to 
+# reconstruct the actor taxonomy
+
+scad$actor1[
+  scad$actor1==&quot;Unknown&quot; &amp; 
+    grepl(&quot;grenade&quot;,scad$issuenote)] &lt;- &quot;Unknown attack&quot; 
+# we also edit the original scad dataset to mirror these changes
+
+scad_actor$actor_level_1_txt[
+  scad_actor$actor1==&quot;unknown&quot; &amp; 
+    grepl(&quot;grenade&quot;,scad_actor$issuenote)] &lt;- &quot;violent groups&quot; 
+# in this case, we see that while the actor is unknown, a grenade attack is 
+# described in the notes
+
+scad_actor$base.categories[
+  scad_actor$actor1==&quot;unknown&quot; &amp; 
+    grepl(&quot;grenade&quot;,scad_actor$issuenote)] &lt;- &quot;Unknown attack&quot; 
+# we also edit the base.categories variable, as it will later be necessary to 
+# reconstruct the actor taxonomy
+
+scad$actor1[
+  scad$actor1==&quot;unknown&quot; &amp; grepl(&quot;grenade&quot;,scad$issuenote)] &lt;- &quot;Unknown attack&quot; 
+# we also edit the original scad dataset to mirror these changes
+
+# Now we reconstruct SCAD&#39;s actor taxonomy:
+scad_actor_tax_old &lt;- scad_actor_tax #saving the old one for checks
+
+scad_actor_tax &lt;- scad_actor %&gt;% #creating the new one from scad_actor
+  dplyr::select(data.source, base.categories, actor_level_1_txt)
+
+scad_actor_tax &lt;- scad_actor_tax[!duplicated(scad_actor_tax$base.categories),] 
+# keeping only unique cases of base.categories, i.e., getting the real actor 
+# taxonomy
+
+# Need to create variable actor_level_2_txt starting from actor_level_1_txt
+# government and violent groups are violent groups, the others are nonviolent
+# groups
+scad_actor_tax$actor_level_2_txt &lt;- &quot;nonviolent groups&quot;
+scad_actor_tax$actor_level_2_txt[
+  scad_actor_tax$actor_level_1_txt==&quot;government&quot;|
+    scad_actor_tax$actor_level_1_txt==&quot;violent groups&quot;] &lt;- &quot;violent groups&quot;
+
+# recheck for missing values
+apply(scad_actor_tax, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##       data.source   base.categories actor_level_1_txt actor_level_2_txt 
+##             FALSE             FALSE             FALSE             FALSE</code></pre>
 </div>
 <div id="gtd-1" class="section level3" number="3.1.4">
 <h3><span class="header-section-number">3.1.4</span> GTD</h3>
+<pre class="r"><code>####GTD####
+# Create dataframe with data.source and base.categories
+base.categories&lt;-unique(as.character(gtd$gname))
+data.source&lt;-rep(&quot;gtd&quot;,length(base.categories))
+gtd_actor_tax &lt;- as.data.frame(cbind(data.source,base.categories))
+
+
+# Need to create variable actor_level_1_txt starting from base.categories
+# Donnay et al. Appendix p.22: level 1 and level 2 violent groups
+# So do not care about lines 146-165
+gtd_actor_tax$actor_level_1_txt &lt;- &quot;violent groups&quot;
+gtd_actor_tax$actor_level_2_txt &lt;- &quot;violent groups&quot;
+
+# checking that GTD&#39;s actor taxonomy covers all actors
+gtd_actor &lt;- gtd %&gt;% 
+  dplyr::left_join(gtd_actor_tax, by = c(&quot;gname&quot; = &quot;base.categories&quot;)) %&gt;% 
+  dplyr::select(gname, gname2, gname3, actor_level_1_txt, actor_level_2_txt)
+
+# looking for missing values
+apply(gtd_actor, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##             gname            gname2            gname3 actor_level_1_txt 
+##             FALSE             FALSE             FALSE             FALSE 
+## actor_level_2_txt 
+##             FALSE</code></pre>
+<pre class="r"><code>####MERGE DIFFERENT ACTOR TAXONOMIES####
+my_actor_tax &lt;- rbind(
+  acled_actor_tax, 
+  ged_actor_tax,
+  scad_actor_tax,
+  gtd_actor_tax)
+
+# looking for missing values
+apply(my_actor_tax, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##       data.source   base.categories actor_level_1_txt actor_level_2_txt 
+##             FALSE             FALSE             FALSE             FALSE</code></pre>
+<pre class="r"><code># printing actr taxonomy as csv file
+# write_csv(
+# my_actor_tax, file = &#39;~/Dropbox/conflict-datasets/Data/actor_taxonomy_v2.csv&#39;</code></pre>
 </div>
 </div>
 <div id="event-taxonomy" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Event taxonomy</h2>
-<p>We base our event taxonomy on <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span>.</p>
+<p>We base our event taxonomy on <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span>. This file is provided on our OSF page.</p>
+<pre class="r"><code># checking that ACLED&#39;s event taxonomy covers all event types
+acled_event &lt;- acled %&gt;% 
+  dplyr::left_join(
+    event_tax %&gt;% 
+      dplyr::filter(data.source == &quot;acled&quot;), 
+    by = c(&quot;event_type&quot; = &quot;base.categories&quot;)) %&gt;% 
+  dplyr::select(event_type, Level_1_text, Level_2_text, Level_3_text)
+
+# looking for missing values
+apply(acled_event, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##   event_type Level_1_text Level_2_text Level_3_text 
+##        FALSE        FALSE        FALSE        FALSE</code></pre>
+<pre class="r"><code># checking that GED&#39;s event taxonomy covers all event types
+ged_event &lt;- ged %&gt;% 
+  dplyr::mutate(type_of_violence = as.character(type_of_violence)) %&gt;% 
+  dplyr::left_join(
+    event_tax %&gt;% 
+      dplyr::filter(data.source == &quot;ged&quot;), 
+    by = c(&quot;type_of_violence&quot; = &quot;base.categories&quot;)) %&gt;% 
+  dplyr::select(type_of_violence, Level_1_text, Level_2_text, Level_3_text)
+
+# looking for missing values
+apply(ged_event, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>## type_of_violence     Level_1_text     Level_2_text     Level_3_text 
+##            FALSE            FALSE            FALSE            FALSE</code></pre>
+<pre class="r"><code># checking that GTD&#39;s event taxonomy covers all event types
+gtd_event &lt;- gtd %&gt;% 
+  dplyr::mutate(attacktype1 = as.character(attacktype1)) %&gt;% 
+  dplyr::left_join(
+    event_tax %&gt;% 
+      dplyr::filter(data.source == &quot;gtd&quot;), 
+    by = c(&quot;attacktype1&quot; = &quot;base.categories&quot;)) %&gt;% 
+  dplyr::select(attacktype1, Level_1_text, Level_2_text, Level_3_text)
+
+# looking for missing values
+apply(gtd_event, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##  attacktype1 Level_1_text Level_2_text Level_3_text 
+##        FALSE        FALSE        FALSE        FALSE</code></pre>
+<pre class="r"><code># checking that SCAD&#39;s event taxonomy covers all event types
+scad_event &lt;- scad %&gt;% 
+  dplyr::mutate(etype = as.character(etype)) %&gt;% 
+  dplyr::left_join(
+    event_tax %&gt;% 
+      dplyr::filter(data.source == &quot;scad&quot;),
+    by = c(&quot;etype&quot; = &quot;base.categories&quot;)) %&gt;% 
+  dplyr::select(etype, Level_1_text, Level_2_text, Level_3_text)
+
+# looking for missing values
+apply(scad_event, 2, function(x) any(is.na(x)))</code></pre>
+<pre><code>##        etype Level_1_text Level_2_text Level_3_text 
+##        FALSE        FALSE        FALSE        FALSE</code></pre>
 </div>
 <div id="precision-taxonomy" class="section level2" number="3.3">
 <h2><span class="header-section-number">3.3</span> Precision taxonomy</h2>
-<p>We use the precision taxonomy developed by <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span>.</p>
+<p>We use the precision taxonomy developed by <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span>. Again, this file is provided on our OSF page.</p>
 </div>
 </div>
 <div id="integrating-with-meltt" class="section level1" number="4">
@@ -762,6 +1659,55 @@ rm(acled_actor, acled_actor_tax, acled_event, ged_actor, ged_actor_tax,
 <div id="comparing-flagged-and-de-duplicated-events-acoss-specifications" class="section level2" number="4.1">
 <h2><span class="header-section-number">4.1</span> Comparing flagged and de-duplicated events acoss specifications</h2>
 <p>We first look at the different number of potential duplicates (i.e., flagged events) that are generated by running MELTT using different spatio-temporal specifications. This is important because changing the fuzziness of the spatial and temporal windows means changing both the number events that will be dropped by <code>meltt</code> as acutal duplicates, and the number of flagged events that need to be manually reviewed after running the algorithm. We see that by increasing the spatio-temporal fuzziness from 1 day, 1km to <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span>’s recommended specification of 1 day, 3km, the number of matched events (i.e., “certain” duplicates according to <code>meltt</code>) and of flagged events (i.e., potential duplicates) also increases. However, further increasing to 1 day, 5 km only increases the number of matched events, not of flagged ones.</p>
+<pre class="r"><code># Get flagged events
+flagged_km1 &lt;- meltt::meltt_inspect(output_km1) #1 day, 1km specification</code></pre>
+<pre><code>## 
+## Note:
+## 38 entries flagged as event-to-episode matches. List generated for user evaluation for all potential matches.</code></pre>
+<pre class="r"><code>flagged_km3 &lt;- meltt::meltt_inspect(output_km3)</code></pre>
+<pre><code>## 
+## Note:
+## 42 entries flagged as event-to-episode matches. List generated for user evaluation for all potential matches.</code></pre>
+<pre class="r"><code>flagged_km5 &lt;- meltt::meltt_inspect(output_km5) #1 day, 5km specification</code></pre>
+<pre><code>## 
+## Note:
+## 42 entries flagged as event-to-episode matches. List generated for user evaluation for all potential matches.</code></pre>
+<pre class="r"><code># we see how many of these flagged event lists are &quot;contained&quot; in each other, 
+# i.e., how many of the events flagged as potential duplicates in the, e.g., 
+# 1km, 1 day specification are retained in the 5km, 1 day specification
+flagged_km3 %in% flagged_km1</code></pre>
+<pre><code>##  [1]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [13]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [25]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [37] FALSE FALSE  TRUE  TRUE FALSE FALSE</code></pre>
+<pre class="r"><code># look at which flagged events with 5km specification are included in 1km 
+# specification: we see that by increasing the spatial fuzziness, we have 4 new 
+# flagged events [37:38] and [41:42]
+flagged_km5 %in% flagged_km1</code></pre>
+<pre><code>##  [1]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [13]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [25]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [37] FALSE FALSE  TRUE  TRUE FALSE FALSE</code></pre>
+<pre class="r"><code>flagged_km5 %in% flagged_km3</code></pre>
+<pre><code>##  [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [16] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [31] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE</code></pre>
+<pre class="r"><code>flagged_event_km5_dfs &lt;- NA
+flagged_episode_km5_dfs &lt;- NA
+
+for(i in 1:length(flagged_km5)){
+  flagged_event_km5_dfs[i] &lt;- flagged_km5[[i]]$`Flagged Event Information`$data.source
+  flagged_episode_km5_dfs[i] &lt;- flagged_km5[[i]]$`Flagged Episode Information`$data.source
+}
+
+table(flagged_event_km5_dfs)</code></pre>
+<pre><code>## flagged_event_km5_dfs
+## acled   ged  scad 
+##    40     1     1</code></pre>
+<pre class="r"><code>table(flagged_episode_km5_dfs)</code></pre>
+<pre><code>## flagged_episode_km5_dfs
+## acled   ged  scad 
+##     2    29    11</code></pre>
 <pre class="r"><code>length(flagged_km1)</code></pre>
 <pre><code>## [1] 38</code></pre>
 <pre class="r"><code>length(flagged_km3)</code></pre>
@@ -770,6 +1716,23 @@ rm(acled_actor, acled_actor_tax, acled_event, ged_actor, ged_actor_tax,
 <pre><code>## [1] 42</code></pre>
 <p>Besides the number of flagged events, we’re interested in seeing how the MELTT algorithm classifies events as certain duplicates (i.e., matched events) or potential duplicates (i.e., flagged events) across spatio-temporal specifications, particularly when increasing the fuzziness. We thus analyze the events that are classified as certain duplicates (and hence will later be dropped) when increasing the spatio-temporal window from 1 day, 1km to 1 day, 5 km. We select two examples to illustrate this.</p>
 <p>This is done by comparing the “de-duplicated” lists of events produced by MELTT using different spatio-temporal specifications. In other words, we see how many events MELTT classifies as certain duplicates and drops when using a window of 1 day, 1 km, and then compare this “de-duplicated” list of events to that produced using a window of 1 day, 5 km.</p>
+<pre class="r"><code># further inspecting duplicates by comparing the &quot;deduplicated&quot; lists, i.e., the
+# lists of events without the events that have been matched as duplicates by 
+# MELTT
+
+deduplicated_km5 &lt;- output_km5$processed[[&quot;deduplicated_index&quot;]] 
+# this is the de-duplicated list with 1 day, 5km specification, that is the 
+# &quot;clean&quot; list of events, without duplicates, only unique events
+
+deduplicated_km1 &lt;- output_km1$processed[[&quot;deduplicated_index&quot;]] 
+# this is the de-duplicated list with 1day, 1km specification, that is the 
+# &quot;clean&quot; list of events, without duplicates, only unique events
+
+# event_matched
+event_matched_km5 &lt;- output_km5$processed[[&quot;event_matched&quot;]]
+event_contenders_km5 &lt;- output_km5$processed[[&quot;event_contenders&quot;]]
+complete_index_km5 &lt;- output_km5$processed[[&quot;complete_index&quot;]]
+episode_contenders_km5 &lt;- output_km5$processed[[&quot;episode_contenders&quot;]]</code></pre>
 <p>The number of elements in these two lists are, respectively:</p>
 <pre class="r"><code>nrow(deduplicated_km1) #spatio-temporal fuzziness of 1 day, 1 km</code></pre>
 <pre><code>## [1] 5517</code></pre>
@@ -977,6 +1940,407 @@ t2 &lt;- meltt::tplot(output_km5, time_unit = &quot;months&quot;)
 gridExtra::grid.arrange(t1,t2)</code></pre>
 <p><img src="data:image/png;base64,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" width="672" /></p>
 <p>When using a spatio-temporal specification of 1 day, 5 km, the <code>meltt</code> package flagged 42 events as potential duplicates (i.e., flagged events). We review all of these and code them manually as either unique or duplicate events.</p>
+<pre class="r"><code># Get flagged events and inspect them manually
+flagged &lt;- meltt::meltt_inspect(output_km5)</code></pre>
+<pre><code>## 
+## Note:
+## 42 entries flagged as event-to-episode matches. List generated for user evaluation for all potential matches.</code></pre>
+<pre class="r"><code>fl  &lt;- list()
+fl2 &lt;- list()
+
+for (i in 1:length(flagged)){
+  fl[[i]] &lt;- flagged[[i]]$`Flagged Event Information`$obs.count
+  fl2[[i]] &lt;- flagged[[i]]$`Flagged Episode Information`$obs.count
+}
+
+#unlist(fl)
+#unlist(fl2)
+
+vars_acled &lt;- c(
+  &quot;start&quot;, &quot;end&quot;, &quot;date&quot;, &quot;enddate&quot;, &quot;event_type&quot;, &quot;actor1&quot;, &quot;actor2&quot;, 
+  &quot;latitude&quot;, &quot;longitude&quot;, &quot;actor_tax&quot;, &quot;event_tax&quot;, &quot;prec_tax&quot;)
+
+vars_ged &lt;- c(
+  &quot;date&quot;, &quot;enddate&quot;, &quot;type_of_violence&quot;, &quot;dyad_name&quot;, &quot;latitude&quot;, &quot;longitude&quot;,
+  &quot;actor_tax&quot;, &quot;event_tax&quot;, &quot;prec_tax&quot;)
+
+vars_scad &lt;- c(
+  &quot;startdate&quot;, &quot;enddate&quot;, &quot;etype&quot;, &quot;actor1&quot;, &quot;actor2&quot;, &quot;latitude&quot;, &quot;longitude&quot;, 
+  &quot;actor_tax&quot;, &quot;event_tax&quot;, &quot;prec_tax&quot;, &quot;notes&quot;)
+
+#View(acled[unlist(fl[c(1:4,6:30,32:42)]),vars_acled])
+#View(ged[unlist(fl2[c(4,6:15,17:25, 28:30, 32:36, 41:42)]),vars_ged])
+#View(ged[unlist(fl[c(5)]),vars_ged])
+#View(acled[unlist(fl2[c(5, 31)]),vars_acled])
+#View(scad[unlist(fl2[c(1:3, 16, 25:27, 37:40)]),vars_scad])
+#View(scad[unlist(fl[c(31)]),vars_scad])</code></pre>
+<pre class="r"><code>acled[unlist(fl[1:3]),vars_acled]</code></pre>
+<pre><code>##           start        end       date    enddate      event_type
+## 1530 1997-04-12 1997-04-12 1997-04-12 1997-04-12 Remote violence
+## 1536 1997-04-12 1997-04-12 1997-04-12 1997-04-12 Remote violence
+## 1528 1997-04-14 1997-04-14 1997-04-14 1997-04-14 Remote violence
+##                                   actor1                    actor2 latitude
+## 1530 Unidentified Armed Group (Ethiopia)      Civilians (Ethiopia)    9.025
+## 1536 Unidentified Armed Group (Ethiopia) Civilians (International)    9.025
+## 1528 Unidentified Armed Group (Ethiopia)      Civilians (Ethiopia)    9.025
+##      longitude                           actor_tax       event_tax prec_tax
+## 1530   38.7469 Unidentified Armed Group (Ethiopia) Remote violence        1
+## 1536   38.7469 Unidentified Armed Group (Ethiopia) Remote violence        1
+## 1528   38.7469 Unidentified Armed Group (Ethiopia) Remote violence        1</code></pre>
+<pre class="r"><code>scad[unlist(fl2[1:3]),vars_scad]</code></pre>
+<pre><code>##     startdate    enddate etype            actor1 actor2 latitude longitude
+## 3   12-Apr-97 1997-04-15     9 Unknown attackers         9.02274   38.7468
+## 3.1 12-Apr-97 1997-04-15     9 Unknown attackers         9.02274   38.7468
+## 3.2 12-Apr-97 1997-04-15     9 Unknown attackers         9.02274   38.7468
+##             actor_tax event_tax prec_tax
+## 3   Unknown attackers         9        1
+## 3.1 Unknown attackers         9        1
+## 3.2 Unknown attackers         9        1
+##                                                                                                                        notes
+## 3   Bombers are almost certainly Al-Itihad, a civil war actor.  However, there is no civil war involving this actor in 1997.
+## 3.1 Bombers are almost certainly Al-Itihad, a civil war actor.  However, there is no civil war involving this actor in 1997.
+## 3.2 Bombers are almost certainly Al-Itihad, a civil war actor.  However, there is no civil war involving this actor in 1997.</code></pre>
+<pre class="r"><code># These are the same events, but they affected different targets (civilians from 
+# Ethiopia and foreigners) on different days. Scad talks of three attacks over 
+# the span of three days (starting on 12/04/97 until 15/04/97). Because we&#39;re 
+# interested in the number of events (and not length in days), we keep the ACLED 
+# events --&gt; acled prevails so T for flagged 1:3
+
+
+# This is the same event but ged spans two days and acled one only. ACLED has 
+# higher precision
+# acled[unlist(fl[4]),vars_acled]
+# ged[unlist(fl2[4]),vars_ged]
+# --&gt; ged prevails so T for flagged 4 but change start date in acled
+
+# This is the same event. In ged it spans one day (1998-06-02) but in acled 3 
+# (1998-06-02 to 1998-06-04)
+# ged[unlist(fl[5]),vars_ged]
+# acled[unlist(fl2[5]),vars_acled]
+# --&gt; acled prevails so T for flagged 5 but change end date in ged
+
+
+# This is the same event but ged spans two days (1998-06-09 to 1998-06-10) and 
+# acled one only (1998-06-09)
+# acled[unlist(fl[6]),vars_acled]
+# ged[unlist(fl2[6]),vars_ged]
+# --&gt; ged prevails so T for flagged 6 but change start date in acled
+
+# This the not the same event. In acled spans one day (1998-10-07), while 2 
+# weeks in ged (1998-10-01 to 1998-10-14), plus the actors involved are 
+# different (civilians vs government)
+# acled[unlist(fl[7]),vars_acled]
+# ged[unlist(fl2[7]),vars_ged]
+# --&gt; F for flagged 7
+
+# This is the same event but ged spans three days (1999-05-24 to 1999-05-26) and 
+# acled one only
+# acled[unlist(fl[8]),vars_acled]
+# ged[unlist(fl2[8]),vars_ged]
+# --&gt; ged prevails so T for flagged 8 but change end date in acled observation
+
+# This is partially the same event. In ged it spans three days 
+# (2000-05-23 2000-05-25) and acled one only; but acled has event on 24th (diff 
+# type of violence) and 25th (same type of violence). Observation fl[10] is NOT 
+# same event.
+# acled[unlist(fl[9:11]),vars_acled]
+# ged[unlist(fl2[9:11]),vars_ged]
+# if same event
+# --&gt; ged prevails so T for flagged 9 and 11, F for flagged 10 but change end 
+# date in acled observation and remember to drop extra acled observations!
+
+
+# This is the same event. ACLED talks about “land disputes&quot; resulting in the 
+# death of 75 people, but only has one day referenced (15/09/2000). GED covers 
+# all month of September. Difference also in number of deaths (47 in GED).
+# acled[unlist(fl[12]),vars_acled]
+# ged[unlist(fl2[12]),vars_ged]
+# --&gt; ged prevails so T for flagged 12 but but change start and end dates acled
+
+
+# This is not the same event, different actors are involved (Oromo Liberation 
+# Front, OLF vs Ogaden National Liberation Front, ONLF)
+# acled[unlist(fl[13]),vars_acled]
+# ged[unlist(fl2[13]),vars_ged]
+# --&gt; F for flagged 13
+
+#This is the same event but in ACLED it was coded as two separate events (on 
+# 2001-04-17 and 2001-04-18) but the actors involved are the same. ACLED ha a 
+# further observation on the 19
+# acled[unlist(fl[14:15]),vars_acled]
+# ged[unlist(fl2[14:15]),vars_ged]
+# --&gt; ged prevails so T for flagged 14-15 but change end dates in acled and 
+# remove extra observations with dates 2001-04-18 and 2001-04-19</code></pre>
+<pre class="r"><code># This is not the same event, the actors involved are different (opposition 
+# party members vs protesters and police force)
+acled[unlist(fl[16]), vars_acled]</code></pre>
+<pre><code>##           start        end       date    enddate event_type
+## 1229 2002-05-24 2002-05-24 2002-05-24 2002-05-24   Protests
+##                     actor1                                actor2 latitude
+## 1229 Protesters (Ethiopia) Police Forces of Ethiopia (1991-2018)   7.0621
+##      longitude             actor_tax event_tax prec_tax
+## 1229   38.4764 Protesters (Ethiopia)  Protests        1</code></pre>
+<pre class="r"><code>scad[unlist(fl2[16]), vars_scad]</code></pre>
+<pre><code>##    startdate    enddate etype                   actor1 actor2 latitude
+## 24 24-May-02 2002-05-25     1 opposition party members          7.0602
+##    longitude                actor_tax event_tax prec_tax notes
+## 24   38.4767 opposition party members         1        2</code></pre>
+<pre class="r"><code># --&gt; F for flagged 16
+
+#This is the same event but in Acled it was coded as two separate events. Acled 
+# has higher precision
+# acled[unlist(fl[17:18]),vars_acled]
+# ged[unlist(fl2[17:18]),vars_ged]
+# --&gt; acled prevails so T for flagged 17-18, but change end date in acled and 
+# drop extra observation [18]
+
+# This is the same event but for ged it is 2002-07-18 to 2002-07-19 for acled 
+# only on 2002-07-18 but then another  event on 2002-07-19
+# acled[unlist(fl[19:20]),vars_acled]
+# ged[unlist(fl2[19:20]),vars_ged]
+# --&gt; ged prevails so T for flagged 19:20 but but change end dates acled and 
+# remember to drop acled observation for 2002-07-19
+
+
+# This is the same event but for ged it is from 1-10 for acled on 1 jan (and 8 
+# jan)
+# acled[unlist(fl[21]),vars_acled]
+# ged[unlist(fl2[21]),vars_ged]
+# --&gt; ged prevails so T for flagged 21 but but change start and end dates acled 
+# and remember to drop acled observation for 2003-01-08
+
+# This is the same event but for ged it is from 1-10 for acled on 1 jan (and 8 
+# jan)
+# acled[unlist(fl[22]),vars_acled]
+# ged[unlist(fl2[22]),vars_ged]
+# --&gt; ged prevails so T for flagged 22 but but change start and end dates acled 
+# and remember to drop acled observation for 2003-01-08
+
+
+# This is the same event but for ged it is from 1-10 for acled on 1 jan (and 8 
+# jan)
+# acled[unlist(fl[23]),vars_acled]
+# ged[unlist(fl2[23]),vars_ged]
+# --&gt; ged prevails so T for flagged 23 but but change start and end dates acled
+# and remember to drop acled observation for 2003-01-08
+
+#This is the same event but in ged it lasts longer (from 2004-04-01 to 
+# 2004-04-10)
+# acled[unlist(fl[24]),vars_acled]
+# ged[unlist(fl2[24]),vars_ged]
+# --&gt; ged prevails so T for flagged 24 but but change start and end dates acled
+
+
+#This is the same event. Coded on slightly different dates (acled and scad).
+acled[unlist(fl[25:26]),vars_acled]</code></pre>
+<pre><code>##           start        end       date    enddate event_type
+## 1504 2005-11-01 2005-11-01 2005-11-01 2005-11-01   Protests
+## 1506 2005-11-02 2005-11-02 2005-11-02 2005-11-02   Protests
+##                     actor1                                actor2 latitude
+## 1504 Protesters (Ethiopia) Police Forces of Ethiopia (1991-2018)    9.025
+## 1506 Protesters (Ethiopia) Police Forces of Ethiopia (1991-2018)    9.025
+##      longitude             actor_tax event_tax prec_tax
+## 1504   38.7469 Protesters (Ethiopia)  Protests        1
+## 1506   38.7469 Protesters (Ethiopia)  Protests        1</code></pre>
+<pre class="r"><code>scad[unlist(fl2[25:26]),vars_scad]</code></pre>
+<pre><code>##      startdate    enddate etype                actor1 actor2 latitude longitude
+## 49    1-Nov-05 2005-11-05     2 opposition supporters         9.02274   38.7468
+## 49.1  1-Nov-05 2005-11-05     2 opposition supporters         9.02274   38.7468
+##                  actor_tax event_tax prec_tax
+## 49   opposition supporters         2        4
+## 49.1 opposition supporters         2        4
+##                                              notes
+## 49   protest spread outside the capital on 11-4-05
+## 49.1 protest spread outside the capital on 11-4-05</code></pre>
+<pre class="r"><code># --&gt; acled prevails so T for flagged 26 but but change end dates acled
+# ACLED has higher precision, hence it might code other protests (as protests 
+# break out) as separate geo-coded events. Because we are interested in the 
+# number of events, not days, we keep ACLED
+
+#This is the same event. Coded on slightly different dates (acled and scad).
+acled[unlist(fl[27]),vars_acled]</code></pre>
+<pre><code>##          start        end       date    enddate event_type
+## 739 2005-11-03 2005-11-03 2005-11-03 2005-11-03   Protests
+##                    actor1 actor2 latitude longitude             actor_tax
+## 739 Protesters (Ethiopia)            12.6   37.4667 Protesters (Ethiopia)
+##     event_tax prec_tax
+## 739  Protests        1</code></pre>
+<pre class="r"><code>scad[unlist(fl2[27]),vars_scad]</code></pre>
+<pre><code>##    startdate    enddate etype                actor1 actor2 latitude longitude
+## 44  1-Nov-05 2005-11-05     2 opposition supporters            12.6   37.4667
+##                actor_tax event_tax prec_tax
+## 44 opposition supporters         2        4
+##                                            notes
+## 44 protest spread outside the capital on 11-4-05</code></pre>
+<pre class="r"><code># --&gt; acled prevails so T for flagged 27 but but change end dates acled
+# ACLED has higher precision, hence it might code other protests (as protests 
+# break out) as separate geo-coded events. Because we are interested in the
+# number of events, not days, we keep ACLED
+
+
+#This is the same event but for ged it is from 14-16 nov for acled on 15 nov 
+# only
+# acled[unlist(fl[28]),vars_acled]
+# ged[unlist(fl2[28]),vars_ged]
+# --&gt; ged prevails so T for flagged 28 but change start and end dates in acled</code></pre>
+<pre class="r"><code># This is the same event but for ged it is from 9-11 feb for acled on 11 feb 
+# only
+# acled[unlist(fl[29]),vars_acled]
+# ged[unlist(fl2[29]),vars_ged]
+# --&gt; ged prevails so T for flagged 29 but change start date for acled 
+# observation
+
+# This the same event. Acled reports only 7/03 while ged 6-7/03
+#acled[unlist(fl[30]),vars_acled]
+#ged[unlist(fl2[30]),vars_ged]
+# --&gt; ged prevails so T for flagged 30 but change start date for acled 
+# observation
+
+# This is the not the same event. The actors involved and the longitude/latitude 
+# is different.
+scad[unlist(fl[31]),vars_scad]</code></pre>
+<pre><code>##    startdate    enddate etype  actor1 actor2 latitude longitude actor_tax
+## 89 15-Jul-12 2012-07-15     2 Muslims         9.02274   38.7468   Muslims
+##    event_tax prec_tax notes
+## 89         2        1</code></pre>
+<pre class="r"><code>acled[unlist(fl2[31]),vars_acled]</code></pre>
+<pre><code>##           start        end       date    enddate event_type
+## 1509 2012-07-13 2012-07-15 2012-07-13 2012-07-15   Protests
+##                     actor1                                actor2 latitude
+## 1509 Protesters (Ethiopia) Police Forces of Ethiopia (1991-2018)    9.025
+##      longitude             actor_tax event_tax prec_tax
+## 1509   38.7469 Protesters (Ethiopia)  Protests        1</code></pre>
+<pre class="r"><code># --&gt; not the same event so F for flagged 31
+
+# This is the not the same event. The actors involved and the longitude/latitude 
+# is different.
+acled[unlist(fl[32]),vars_acled]</code></pre>
+<pre><code>##          start        end       date    enddate                    event_type
+## 450 2015-06-01 2015-06-01 2015-06-01 2015-06-01 Battle-No change of territory
+##                                      actor1                          actor2
+## 450 Military Forces of Ethiopia (1991-2018) Hamar Ethnic Militia (Ethiopia)
+##     latitude longitude                               actor_tax
+## 450    5.786   36.5652 Military Forces of Ethiopia (1991-2018)
+##                         event_tax prec_tax
+## 450 Battle-No change of territory        2</code></pre>
+<pre class="r"><code>ged[unlist(fl2[32]),vars_ged]</code></pre>
+<pre><code>##            date    enddate type_of_violence                          dyad_name
+## 1250 2015-05-15 2015-05-31                3 Government of Ethiopia - Civilians
+##      latitude longitude              actor_tax event_tax prec_tax
+## 1250 5.783333  36.56667 Government of Ethiopia         3        3</code></pre>
+<pre class="r"><code># --&gt; not the same event so F for flagged 32
+
+# This is the same event but for ged it is from 17-20 jan for acled on 18 jan
+# only
+# acled[unlist(fl[33]),vars_acled]
+# ged[unlist(fl2[33]),vars_ged]
+# --&gt; ged prevails so T for flagged 33 but change start and end date for acled 
+# observation
+
+#This is the same event but for ged it is from 12-15 feb for acled on 12 feb 
+# only
+# THOUGH we do have two events on 15 feb one is protests and the other battle 
+# with armed group. it could be that the protest in acled is type 3 violence in 
+# ged (so violence against civilians)
+# acled[unlist(fl[34]),vars_acled]
+# ged[unlist(fl2[34]),vars_ged]
+# --&gt; ged prevails so T for flagged 34 but then remember to drop acled 
+# observation BUT to change enddate for event from 2016-02-15 to 2016-02-14
+# because we have the acled observation recorded as protest on 15 feb
+
+
+# This is the same event but for ged it is from 6-7 aug for acled on 6 aug only
+#acled[unlist(fl[35]),vars_acled]
+#ged[unlist(fl2[35]),vars_ged]
+# --&gt; ged prevails so T for flagged 35 but change end date for acled observation
+
+# This is the same event but for ged it is from 6-7 aug for acled on 6 aug only
+#acled[unlist(fl[36]),vars_acled]
+#ged[unlist(fl2[36]),vars_ged]
+# --&gt; ged prevails so T for flagged 36 but change end date for acled observation
+
+# For scad and acled, we talk about one event that spans 3 days (4-6 oct) in 
+# scad and 3 days (3-5 oct) in acled, though in acled the 4th of oct is 
+# categorised as riots and not protest as in scad
+#acled[unlist(fl[37:38]),vars_acled]
+#scad[unlist(fl2[37:38]),vars_scad]
+# --&gt; acled is to keep, as scad notes that &quot;The date of this incident is an 
+# estimate; no dates were provided by either source, although both indicated the 
+# attacks spanned multiple days.&quot;. Because we are interested in the number of 
+# events, not days, we give priority to ACLED.
+# --&gt; T for flagged 37:38
+
+#This is the same event, but in scad it spans one extra day (4-Oct-16 to 
+# 2016-10-05)
+acled[unlist(fl[39]),vars_acled]</code></pre>
+<pre><code>##           start        end       date    enddate event_type
+## 1486 2016-10-05 2016-10-05 2016-10-05 2016-10-05   Protests
+##                     actor1 actor2 latitude longitude             actor_tax
+## 1486 Protesters (Ethiopia)           9.025   38.7469 Protesters (Ethiopia)
+##      event_tax prec_tax
+## 1486  Protests        1</code></pre>
+<pre class="r"><code>scad[unlist(fl2[39]),vars_scad]</code></pre>
+<pre><code>##     startdate    enddate etype     actor1 actor2 latitude longitude  actor_tax
+## 135  4-Oct-16 2016-10-05     4 Protesters         9.02274   38.7468 Protesters
+##     event_tax prec_tax
+## 135         4        1
+##                                                                                                                                                                                                                                                                                            notes
+## 135 The number of stonings, as well as the number of participants in this series of attacks is not mentioned. The time period provided is an estimate; AFP does not specify on which days the stonings occurred, though the rest of the article covers events that transpired on these two days.</code></pre>
+<pre class="r"><code># --&gt; Acled is to keep, as scad notes &quot;the number of stonings, as well as the 
+# number of participants in this series of attacks is not mentioned. The time 
+# period provided is an estimate; AFP does not specify on which days the 
+# stonings occurred, though the rest of the article covers events that 
+# transpired on these two days&quot;
+# --&gt; T for flagged 39
+
+#This is the same event, but in scad it lasts longer (2017-04-01 to 2017-04-26)
+acled[unlist(fl[40]),vars_acled]</code></pre>
+<pre><code>##          start        end       date    enddate      event_type
+## 754 2017-04-03 2017-04-03 2017-04-03 2017-04-03 Remote violence
+##                                  actor1               actor2 latitude longitude
+## 754 Unidentified Armed Group (Ethiopia) Civilians (Ethiopia)     12.6   37.4667
+##                               actor_tax       event_tax prec_tax
+## 754 Unidentified Armed Group (Ethiopia) Remote violence        1</code></pre>
+<pre class="r"><code>scad[unlist(fl2[40]),vars_scad]</code></pre>
+<pre><code>##     startdate    enddate etype          actor1 actor2 latitude longitude
+## 149  1-Apr-17 2017-04-26     9 Unknown Bombers            12.6   37.4667
+##           actor_tax event_tax prec_tax
+## 149 Unknown Bombers         9        2
+##                                                                                                                                   notes
+## 149 Dates of this event are estimated.  A source article dated 4/27/17 said that four attacks had taken place &quot;&quot;this month&quot;&quot; in Gondar.</code></pre>
+<pre class="r"><code># --&gt; Acled is to keep, because it has higher precision and as scad notes &quot;Dates 
+# of this event are estimated&quot;
+# --&gt; T for flagged 40
+
+# This is the same event but in ged it spans more days (2017-10-10 2017-10-12)
+acled[unlist(fl[41]),vars_acled]</code></pre>
+<pre><code>##           start        end       date    enddate event_type             actor1
+## 2333 2017-10-11 2017-10-11 2017-10-11 2017-10-11      Riots Rioters (Ethiopia)
+##                                     actor2 latitude longitude
+## 2333 Police Forces of Ethiopia (1991-2018)     8.72     40.64
+##               actor_tax event_tax prec_tax
+## 2333 Rioters (Ethiopia)     Riots        1</code></pre>
+<pre class="r"><code>ged[unlist(fl2[41]),vars_ged]</code></pre>
+<pre><code>##            date    enddate type_of_violence                          dyad_name
+## 1417 2017-10-10 2017-10-12                3 Government of Ethiopia - Civilians
+##      latitude longitude              actor_tax event_tax prec_tax
+## 1417 8.733333     40.65 Government of Ethiopia         3        1</code></pre>
+<pre class="r"><code># --&gt; ged prevails so T for flagged 41 but change start and end date for acled 
+# observation 2017-10-11
+
+# This is the saame event but in ged it spans more days (2017-10-20 to 
+# 2017-10-22)
+acled[unlist(fl[42]),vars_acled]</code></pre>
+<pre><code>##          start        end       date    enddate event_type             actor1
+## 317 2017-10-20 2017-10-20 2017-10-20 2017-10-20      Riots Rioters (Ethiopia)
+##                 actor2 latitude longitude          actor_tax event_tax prec_tax
+## 317 Rioters (Ethiopia)   8.5833   36.1123 Rioters (Ethiopia)     Riots        1</code></pre>
+<pre class="r"><code>ged[unlist(fl2[42]),vars_ged]</code></pre>
+<pre><code>##            date    enddate type_of_violence      dyad_name latitude longitude
+## 1581 2017-10-20 2017-10-22                2 Amhara - Oromo 8.605372  36.10482
+##      actor_tax event_tax prec_tax
+## 1581    Amhara         2        2</code></pre>
+<pre class="r"><code># --&gt; acled prevails, so T for flagged 42, but change end date in acled</code></pre>
 <p>We see two examples of flagged events which are indeed duplicates, but were not immediately matched by MELTT because the two original datasets, ACLED and GED, coded the events as happening on slightly different dates:</p>
 <pre class="r"><code>for (i in c(4, 6)) {
   print(acled[unlist(fl[i]),vars_acled])
@@ -1075,10 +2439,154 @@ merged &lt;- meltt::meltt_inspect(output_km5, confirmed_matches = retain)</code>
 ## 4                                        3        1
 ## 5         Headquarters or base established        1
 ## 6                                        2        2</code></pre>
+<pre class="r"><code># Observations acled to drop
+acledtodrop &lt;- unlist(fl[c(11, 15, 18, 20)])
+merged2 &lt;- merged[!(merged$event %in% acledtodrop &amp; merged$dataset==&quot;acled&quot;),]
+#length(merged$event)-length(acledtodrop);length(merged2$event)
+
+# Drop acled x3 and for protesters
+a1 &lt;- which(
+  acled$latitude==8.2091&amp;acled$longitude==34.1179&amp;acled$date==&quot;2003-01-08&quot;)#2681
+
+a2 &lt;- which(
+  acled$latitude==8.25&amp;acled$longitude==34.5833&amp;acled$date==&quot;2003-01-08&quot;)#2682
+
+a3 &lt;- which(
+  acled$latitude==8.2&amp;acled$longitude==34.2667&amp;acled$date==&quot;2003-01-08&quot;)#2683
+
+#a4 &lt;- which(
+#  acled$latitude == 8.9833 &amp; 
+#    acled$longitude == 37.85 &amp; 
+#    acled$date == &quot;2016-08-06&quot; &amp; 
+#    acled$event_type == &quot;Protests&quot;)#351
+
+# a5 &lt;- which(
+#   acled$latitude == 7.2 &amp; 
+#     acled$longitude == 38.6 &amp; 
+#     acled$date == &quot;2016-08-06&quot; &amp; 
+#     acled$event_type == &quot;Riots&quot;)
+
+#a6 &lt;- which(
+#  acled$latitude == 7.1 &amp; 
+#    acled$longitude == 39.2 &amp; 
+#    acled$date == &quot;2016-08-06&quot; &amp; 
+#    acled$event_type==&quot;Riots&quot;)
+
+acledtodrop2 &lt;- c(a1,a2,a3)
+merged3 &lt;- merged2[
+  !(merged2$event %in% acledtodrop2 &amp; merged2$dataset == &quot;acled&quot;),]</code></pre>
 </div>
 <div id="merging-into-one-dataset" class="section level1" number="6">
 <h1><span class="header-section-number">6</span> Merging into one dataset</h1>
 <p>After manually reviewing the flagged events, we merge all data to generate the final dataset, which includes 5465 observations.</p>
+<pre class="r"><code># changing end and start dates for ACLED
+
+d &lt;- unlist(fl[4]) 
+# This is the same event but ged spans two days and acled one only. ACLED has 
+# higher precision
+
+cdf$date[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;1998-05-30&quot;
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;1998-05-31&quot;
+
+d&lt;-unlist(fl[5]) 
+# This is the same event. In ged it spans one day (1998-06-02) but in acled 3 
+# (1998-06-02 to 1998-06-04)
+
+cdf$enddate[cdf$dataset==&quot;ged&quot; &amp; cdf$event==d] &lt;- &quot;1998-06-04&quot;
+
+d&lt;-unlist(fl[6]) 
+#This is the same event but ged spans two days (1998-06-09 to 1998-06-10) and 
+# acled one only (1998-06-09)
+
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;1998-06-10&quot;
+
+d&lt;-unlist(fl[8]) 
+# This is the same event but ged spans three days (1999-05-24 to 1999-05-26) 
+# and acled one only
+
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;1999-05-26&quot;
+
+d&lt;-unlist(fl[9]) 
+# This is the same event. In ged it spans three days (2000-05-23 2000-05-25) 
+# and acled one only; we change end date to match ged
+
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2000-05-25&quot;
+
+d&lt;-unlist(fl[12]) 
+# This is the same event. ACLED talks about “land disputes&quot; resulting in the 
+# death of 75 people, but only has one day referenced (15/09/2000). GED covers 
+# all month of September. We change daates to match
+
+cdf$date[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2000-09-01&quot;
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2000-09-30&quot;
+
+d&lt;-unlist(fl[14]) 
+#This is the same event but in ACLED it was coded as two separate events (on 
+# 2001-04-17 and 2001-04-18) but the actors involved are the same. ACLED has a
+# further observation on the 19 to be dropped
+
+cdf$date[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2001-04-17&quot;
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2001-04-20&quot;
+
+# adding deaths that wrre recorded for 2001-04-19
+cdf$deaths[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- 39 
+
+cdf &lt;- cdf[!(cdf$dataset==&quot;acled&quot; &amp; cdf$date==&quot;2001-04-19&quot; &amp; cdf$event ==1545),]
+
+d &lt;- unlist(fl[17])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2002-06-23&quot;
+
+d&lt;-unlist(fl[19])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2002-07-19&quot;
+
+d&lt;-unlist(fl[21])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2003-01-10&quot;
+
+d&lt;-unlist(fl[22])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2003-01-10&quot;
+
+d&lt;-unlist(fl[23])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2003-01-10&quot;
+
+d&lt;-unlist(fl[24])
+cdf$date[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2004-04-01&quot;
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2004-04-10&quot;
+
+d&lt;-unlist(fl[26])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2005-11-05&quot;
+
+d&lt;-unlist(fl[27])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2005-11-05&quot;
+
+d&lt;-unlist(fl[28])
+cdf$date[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2005-11-14&quot;
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2005-11-16&quot;
+
+d&lt;-unlist(fl[29])
+cdf$date[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2007-02-09&quot;
+
+d&lt;-unlist(fl[30])
+cdf$date[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2009-03-06&quot;
+
+d&lt;-unlist(fl[33])
+cdf$date[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2016-01-17&quot;
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2016-01-20&quot;
+
+d&lt;-unlist(fl[34])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2016-02-15&quot;
+
+d&lt;-unlist(fl[35])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2016-08-07&quot;
+
+d&lt;-unlist(fl[36])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2016-08-07&quot;
+
+d&lt;-unlist(fl[41])
+cdf$date[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2017-10-10&quot;
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2017-10-12&quot;
+
+d&lt;-unlist(fl[42])
+cdf$enddate[cdf$dataset==&quot;acled&quot;&amp;cdf$event==d] &lt;- &quot;2017-10-22&quot;</code></pre>
 <pre><code>## &#39;data.frame&#39;:    5465 obs. of  12 variables:
 ##  $ dataset  : chr  &quot;gtd&quot; &quot;ged&quot; &quot;acled&quot; &quot;scad&quot; ...
 ##  $ date     : Date, format: &quot;1997-02-10&quot; &quot;1999-01-01&quot; ...

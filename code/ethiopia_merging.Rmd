@@ -191,7 +191,7 @@ levels(acled$event_type)
 
 We carry out further cleaning of the ACLED dataset by substituting categorical responses with numerical values and by changing the format of other variables (including latitude and longitude, and time-related variables).
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # looking for missing values
 apply(acled, 2, function(x) any(is.na(x)))
@@ -282,7 +282,7 @@ acled$ym <- zoo::as.yearmon(
 
 We look for potential duplicate events in the data by inspecting instances where all the main variables display the same value, and drop redundant observations. This process lead us to drop 31 observations (the total number of observations in ACLED is then 4071).
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # inspecting duplicates
 duplic <- acled[
@@ -322,7 +322,7 @@ Moreover, the structure of the ACLED dataset is in long format, meaning that eve
 
 After reshaping, the number of observations decreases further to 3700 observations.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # reshaping from long to wide
 data.table::setDT(acled)
@@ -365,7 +365,7 @@ rm(acled_old, duplic, lut1, lut3)
 
 Subsetting the GTD dataset to years between 1997 and 2017 results in 109 observations.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 gtd <- read.csv(paste0(fp_data, "/GTD/globalterrorismdb_0221dist.csv"))
 
@@ -382,7 +382,7 @@ nrow(gtd)
 
 We also look for potential duplicate observations by inspecting instances where the main variables have the same value, and drop 8 duplicated events, leading to a total of 101 observations.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # inspecting duplicates
 duplic <- gtd[
@@ -449,7 +449,7 @@ gtd <- gtd[!(gtd$eventid == 199702100009),]
 
 To allow for the merging process with `meltt`, we also drop entries where geo-tagged or date information is missing or incomplete, leading to 99 observations.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # convert dates to class date. rename variables to match taxonomy names. 
 # drop entries missing date information. drop entries missing geo-tagged 
@@ -482,7 +482,7 @@ rm(duplic)
 
 Subsetting the GED dataset to years between 1997 and 2017 produces 1659 observations.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 load(paste0(fp_data, "/UCDP GED/ged201-RData/ged201.RData"))
 ged <- subset(ged201, country == "Ethiopia")
@@ -496,7 +496,7 @@ ged <- subset(ged, year <= 2017) # possible to extend
 
 Again, we look for potential duplicated events by analyzing observations that display the same value for the main variables, and drop 1 duplicated event, for a total of 1658 observations.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # inspecting duplicates
 duplic <- ged[
@@ -535,7 +535,7 @@ ged <- ged[
 
 Following @Donnay2019 (Appendix, p.24), we swap the primary actor (side_a) and the secondary actor (side_b) for all events coded as state-based violence (type of violence = 1).
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # following Donnay et al. 2019 Appendix, p.24, change side_a in side_b for 
 # type of violence = 1
@@ -567,7 +567,7 @@ rm(duplic, ged201)
 
 Subsetting the SCAD dataset to years between 1997 and 2017 results in 175 observations.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 scad <- fread(
   paste0(fp_data,
@@ -587,7 +587,7 @@ scad <- subset(scad, eyr <= 2017)
 As for the previous datasets, we look for potential instances of duplicated events, but do not find any in the SCAD data.
 
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # inspecting duplicates
 duplic <- scad[duplicated(scad[ , c("ccode" , "countryname",    
@@ -627,11 +627,11 @@ rm(duplic)
 
 ## Actor taxonomy
 
-We develop the actor taxonomies separately for each conflict dataset. The initial recoding process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by @Donnay2019 to standardise actors across datasets. This can be found in the file `Ethiopia_merging_notes_suppinfo.doc`.
+We develop the actor taxonomies separately for each conflict dataset. The initial recoding process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by @Donnay2019 to standardise actors across datasets. This can be found in the file `summary.rmd`.
 
 ### ACLED
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 ####ACLED####
 # Create dataframe with data.source and base.categories
@@ -778,7 +778,7 @@ acled_actor_tax$actor_level_2_txt[
 ```
 
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # checking that ACLED's actor taxonomy covers all actors
 acled_actor <- acled %>% 
@@ -793,7 +793,7 @@ apply(acled_actor, 2, function(x) any(is.na(x)))
 
 ### GED
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 ####GED####
 # Create dataframe with data.source and base.categories
@@ -826,7 +826,7 @@ apply(ged_actor, 2, function(x) any(is.na(x)))
 
 ### SCAD
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 ####SCAD####
 # Create dataframe with data.source and base.categories
@@ -977,7 +977,7 @@ scad_actor_tax$actor_level_1_txt[
 
 ```
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # checking that SCAD's actor taxonomy covers all actors
 scad_actor <- scad %>% 
@@ -1080,7 +1080,7 @@ apply(scad_actor_tax, 2, function(x) any(is.na(x)))
 
 ### GTD
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 ####GTD####
 # Create dataframe with data.source and base.categories
@@ -1105,7 +1105,7 @@ apply(gtd_actor, 2, function(x) any(is.na(x)))
 
 ```
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 ####MERGE DIFFERENT ACTOR TAXONOMIES####
 my_actor_tax <- rbind(
@@ -1125,9 +1125,9 @@ apply(my_actor_tax, 2, function(x) any(is.na(x)))
 
 ## Event taxonomy
 
-We base our event taxonomy on @Donnay2019.
+We base our event taxonomy on @Donnay2019. This file is provided on our OSF page.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # checking that ACLED's event taxonomy covers all event types
 acled_event <- acled %>% 
@@ -1180,7 +1180,7 @@ apply(scad_event, 2, function(x) any(is.na(x)))
 
 ## Precision taxonomy
 
-We use the precision taxonomy developed by @Donnay2019.
+We use the precision taxonomy developed by @Donnay2019. Again, this file is provided on our OSF page.
 
 # Integrating with ``meltt``
 
@@ -1315,7 +1315,7 @@ output_km5 # Summary of the integration
 
 We first look at the different number of potential duplicates (i.e., flagged events) that are generated by running MELTT using different spatio-temporal specifications. This is important because changing the fuzziness of the spatial and temporal windows means changing both the number events that will be dropped by `meltt` as acutal duplicates, and the number of flagged events that need to be manually reviewed after running the algorithm. We see that by increasing the spatio-temporal fuzziness from 1 day, 1km to @Donnay2019's recommended specification of 1 day, 3km, the number of matched events (i.e., "certain" duplicates according to `meltt`) and of flagged events (i.e., potential duplicates) also increases. However, further increasing to 1 day, 5 km only increases the number of matched events, not of flagged ones.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # Get flagged events
 flagged_km1 <- meltt::meltt_inspect(output_km1) #1 day, 1km specification
@@ -1360,7 +1360,7 @@ Besides the number of flagged events, we're interested in seeing how the MELTT a
 
 This is done by comparing the "de-duplicated" lists of events produced by MELTT using different spatio-temporal specifications. In other words, we see how many events MELTT classifies as certain duplicates and drops when using a window of 1 day, 1 km, and then compare this "de-duplicated" list of events to that produced using a window of 1 day, 5 km.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # further inspecting duplicates by comparing the "deduplicated" lists, i.e., the
 # lists of events without the events that have been matched as duplicates by 
@@ -1501,7 +1501,7 @@ gridExtra::grid.arrange(t1,t2)
 
 When using a spatio-temporal specification of 1 day, 5 km, the ``meltt`` package flagged 42 events as potential duplicates (i.e., flagged events). We review all of these and code them manually as either unique or duplicate events.
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # Get flagged events and inspect them manually
 flagged <- meltt::meltt_inspect(output_km5)
@@ -1538,7 +1538,7 @@ vars_scad <- c(
 ```
 
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 acled[unlist(fl[1:3]),vars_acled]
 scad[unlist(fl2[1:3]),vars_scad]
@@ -1617,7 +1617,7 @@ scad[unlist(fl2[1:3]),vars_scad]
 ```
 
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # This is not the same event, the actors involved are different (opposition 
 # party members vs protesters and police force)
@@ -1695,7 +1695,7 @@ scad[unlist(fl2[27]),vars_scad]
 ```
 
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # This is the same event but for ged it is from 9-11 feb for acled on 11 feb 
 # only
@@ -1847,7 +1847,7 @@ head(merged)
 ```
 
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # Observations acled to drop
 acledtodrop <- unlist(fl[c(11, 15, 18, 20)])
@@ -2027,7 +2027,7 @@ cdf <- cdf4[, c("dataset", "date", "enddate", "actor_tax", "actor2",
 
 
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 
 # changing end and start dates for ACLED
 
