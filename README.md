@@ -14,7 +14,7 @@ To reproduce the final dataset, one needs the following files:
 1. ged201.RData
 1. SCAD2018Africa_Final.csv
 
-We provide the first three dataset, but we provide written instructions for downloading the other four datasets, this is because datasets such as ACLED, though publicly available, require researchers to create an account and provide private security keys in order to download their data.
+We provide the first three dataset, but we provide written instructions for downloading the other four datasets, this is because datasets such as ACLED, though publicly available, require researchers to create an account and provide private security keys in order to download their data. Below we describe the procedure to download each of the four datasets. 
 
 ## Downloading ACLED
 
