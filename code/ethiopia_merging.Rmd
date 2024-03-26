@@ -627,7 +627,7 @@ rm(duplic)
 
 ## Actor taxonomy
 
-We develop the actor taxonomies separately for each conflict dataset. The initial recoding process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by @Donnay2019 to standardise actors across datasets. This can be found in the file `summary.rmd`.
+We develop the actor taxonomies separately for each conflict dataset. The initial recoding process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by @Donnay2019 to standardise actors across datasets. This can be found in the file `summary.rmd` and on our OSF page.
 
 ### ACLED
 
@@ -1125,7 +1125,7 @@ apply(my_actor_tax, 2, function(x) any(is.na(x)))
 
 ## Event taxonomy
 
-We base our event taxonomy on @Donnay2019. This file is provided on our OSF page.
+We base our event taxonomy on @Donnay2019. Again, this file is provided on our OSF page.
 
 ```{r, include = TRUE}
 
