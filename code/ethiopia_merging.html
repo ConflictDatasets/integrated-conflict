@@ -1045,7 +1045,7 @@ acled_actor_tax$actor_level_2_txt &lt;- &quot;nonviolent groups&quot;
 acled_actor_tax$actor_level_2_txt[
   acled_actor_tax$actor_level_1_txt == &quot;government&quot; |
     acled_actor_tax$actor_level_1_txt == &quot;violent groups&quot;] &lt;- &quot;violent groups&quot;</code></pre>
-<pre class="r"><code># checking that ACLED&#39;s actor taxonomy covers all actors
+<pre class="r"><code># checking that ACLED&#39;s actor taxonomy cover all actors
 acled_actor &lt;- acled %&gt;% 
   dplyr::left_join(
     acled_actor_tax, by = c(&quot;actor1&quot; = &quot;base.categories&quot;)) %&gt;% 
