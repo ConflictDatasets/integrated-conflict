@@ -2160,7 +2160,7 @@ nrow(duplic)
 
 ```
 
-We also check that the our previous taxonomies (event, precision, and actor) covers all observations in this merged dataset: 
+We also check that the our previous taxonomies (event, precision, and actor) cover all observations in this merged dataset: 
 
 ```{r}
 
