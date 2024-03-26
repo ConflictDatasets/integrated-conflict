@@ -99,7 +99,7 @@ After identifying duplicates (either automatically or manually), the MELTT packa
 
 # Generating a Merged Dataset
 
-If we set a fuzziness of one day and 5 km, manually review all flagged events, we can then move to the integration of datasets. After dropping duplicates, both automatically and manually, we reduce the number of unique events from 5465 to 5392
+If we set a fuzziness of one day and 5 km, manually review all flagged events, we can then move to the integration of datasets. After dropping duplicates, both automatically and manually, we reduce the number of unique events from 5465 to 5392.
 
 # Final data
 
