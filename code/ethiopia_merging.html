@@ -871,7 +871,7 @@ rm(duplic)</code></pre>
 <h1><span class="header-section-number">3</span> Developing taxonomies</h1>
 <div id="actor-taxonomy" class="section level2" number="3.1">
 <h2><span class="header-section-number">3.1</span> Actor taxonomy</h2>
-<p>We develop the actor taxonomies separately for each conflict dataset. The initial recoding process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span> to standardise actors across datasets. This can be found in the file <code>summary.rmd</code>.</p>
+<p>We develop the actor taxonomies separately for each conflict dataset. The initial recoding process relies on existing research, existing databases, and online resources. We then use the taxonomy developed by <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span> to standardise actors across datasets. This can be found in the file <code>summary.rmd</code> and on our OSF page.</p>
 <div id="acled-1" class="section level3" number="3.1.1">
 <h3><span class="header-section-number">3.1.1</span> ACLED</h3>
 <pre class="r"><code>####ACLED####
@@ -1385,7 +1385,7 @@ apply(my_actor_tax, 2, function(x) any(is.na(x)))</code></pre>
 </div>
 <div id="event-taxonomy" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Event taxonomy</h2>
-<p>We base our event taxonomy on <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span>. This file is provided on our OSF page.</p>
+<p>We base our event taxonomy on <span class="citation">Donnay et al. (<a href="#ref-Donnay2019">2019</a>)</span>. Again, this file is provided on our OSF page.</p>
 <pre class="r"><code># checking that ACLED&#39;s event taxonomy covers all event types
 acled_event &lt;- acled %&gt;% 
   dplyr::left_join(
