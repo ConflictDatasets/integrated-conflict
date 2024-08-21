@@ -2,7 +2,7 @@
 
 This repository contains code and documentation related to the Ethiopia integrated conflict dataset between January 1997 and December 2017.
 
-The main code document contains details on downloading existing conflict datasets from their respective websites. The final merged conflict dataset is available on [OSF](https://osf.io/6vkm8/), as are the individual taxonomy datasets.
+The main code document contains details on downloading existing conflict datasets from their respective websites. The final merged conflict dataset is available on [OSF](https://osf.io/6vkm8/), as are the individual taxonomy datasets. The final merged conflict dataset should be cited as: Andriano, Liliana, Mathis Ebbinghaus, and Thomas James Brailey. 2023. “Building a comprehensive database on conflict: Ethiopia, 1997–2017.” OSF. https://doi.org/10.17605/osf.io/6vkm8
 
 To reproduce the final dataset, one needs the following files:
 
