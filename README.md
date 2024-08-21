@@ -43,3 +43,6 @@ We provide the first three dataset, but we provide written instructions for down
 1. Click on `Download SCAD—Africa`. 
 1. Save the dataset in a folder called `UCDP GED`.
 
+# Acknowledgement
+This work was generously supported by the British Academy (BA/Leverhulme SRG21\210356) and the John Fell Oxford University Press (OUP) Research Fund.
+
